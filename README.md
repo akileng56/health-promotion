@@ -1,1 +1,1 @@
-# health-promotion
+# Health Promotions
