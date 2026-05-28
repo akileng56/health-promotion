@@ -1,204 +1,96 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCategories } from '../api';
+
+interface SubCategory {
+    id: number;
+    name: string;
+}
+
+interface Category {
+    id: number;
+    name: string;
+    subcategories?: SubCategory[];
+}
+
 export default function Categories() {
     const navigate = useNavigate();
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [activeTabId, setActiveTabId] = useState<number | null>(null);
+
+    useEffect(() => {
+        getCategories()
+            .then(data => {
+                setCategories(data);
+                if (data.length > 0) {
+                    setActiveTabId(data[0].id);
+                }
+            })
+            .catch(err => console.error("Error fetching categories:", err));
+    }, []);
+
     return (
-        <section id="features" className="features  services section">
-
-
+        <section id="features" className="features services section">
             <div className="container section-title">
                 <h2>Categories</h2>
                 <p>Check Our Categories<br/></p>
             </div>
 
-
             <div className="container">
-
                 <div className="row">
                     <div className="col-lg-3">
                         <ul className="nav nav-tabs flex-column">
-                            <li className="nav-item">
-                                <a className="nav-link active show" data-bs-toggle="tab" href="#features-tab-1">
-                                    Epidemics
-                                </a>
-                            </li>
-                            <li className="nav-item">
-                                <a className="nav-link" data-bs-toggle="tab" href="#features-tab-2">Covid-19</a>
-                            </li>
-                            <li className="nav-item">
-                                <a className="nav-link" data-bs-toggle="tab" href="#features-tab-3">Health in women</a>
-                            </li>
-                            <li className="nav-item">
-                                <a className="nav-link" data-bs-toggle="tab" href="#features-tab-4">Health in men</a>
-                            </li>
-                            <li className="nav-item">
-                                <a className="nav-link" data-bs-toggle="tab" href="#features-tab-5">Young people and
-                                    Children</a>
-                            </li>
+                            {categories.map((category) => (
+                                <li className="nav-item" key={category.id}>
+                                    <a 
+                                        className={`nav-link ${activeTabId === category.id ? 'active show' : ''}`}
+                                        onClick={(e) => { e.preventDefault(); setActiveTabId(category.id); }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {category.name}
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                     <div className="col-lg-9 mt-4 mt-lg-0">
                         <div className="tab-content">
-                            <div className="tab-pane active show" id="features-tab-1">
-                                <div className="col-lg-8 details order-2 order-lg-1">
-                                    <h3>Epidemics Categories</h3>
-                                </div>
-                                <div className="row">
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a onClick={() => navigate('/details')}
-                                                                     className="stretched-link">Ebola</a></h4>
-                                        </div>
+                            {categories.map((category) => (
+                                <div 
+                                    className={`tab-pane ${activeTabId === category.id ? 'active show' : ''}`} 
+                                    key={category.id}
+                                >
+                                    <div className="col-lg-8 details order-2 order-lg-1">
+                                        <h3>{category.name}</h3>
                                     </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Cholera</a>
-                                            </h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Yellow
-                                                Fever</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Measles and
-                                                Rubella</a></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="tab-pane" id="features-tab-2">
-                                <div className="col-lg-8 details order-2 order-lg-1">
-                                    <h3>Covid-19 Categories</h3>
-                                </div>
-                                <div className="row">
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Covid-19 in the
-                                                community</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Experiences of
-                                                Covid-19 and Intensive Care</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Family
-                                                experiences of Long Covid</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Long Covid in
-                                                Adults</a></h4>
-                                        </div>
+                                    <div className="row">
+                                        {category.subcategories?.map((sub) => (
+                                            <div className="col-md-3" key={sub.id}>
+                                                <div className="service-item d-flex position-relative h-100">
+                                                    <h4 className="title">
+                                                        <a 
+                                                            onClick={() => navigate(`/details?subcategory_id=${sub.id}`)}
+                                                            className="stretched-link"
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
+                                                            {sub.name}
+                                                        </a>
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {(!category.subcategories || category.subcategories.length === 0) && (
+                                            <div className="col-12">
+                                                <p className="text-muted">No subcategories found for this category.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                            <div className="tab-pane" id="features-tab-3">
-                                <div className="col-lg-8 details order-2 order-lg-1">
-                                    <h3>Health in Women</h3>
-                                </div>
-                                <div className="row">
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Antenatal
-                                                Screening</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Breast Cancer
-                                                in women</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#"
-                                                                     className="stretched-link">Breastfeeding</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Feeding a baby
-                                                while living with HIV</a></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="tab-pane" id="features-tab-4">
-                                <div className="col-lg-8 details order-2 order-lg-1">
-                                    <h3>Health in Men Categories</h3>
-                                </div>
-                                <div className="row">
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Prostate
-                                                Cancer</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Testicular
-                                                Cancer</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Penile
-                                                Cancer</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">PSA test for
-                                                prostate cancer</a></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="tab-pane" id="features-tab-5">
-                                <div className="col-lg-8 details order-2 order-lg-1">
-                                    <h3>Young people and Children Categories</h3>
-                                </div>
-                                <div className="row">
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Drugs and
-                                                Alcohol (young people)</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Diabetes type 1
-                                                (young people)</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Epilepsy in
-                                                Young People</a></h4>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3" >
-                                        <div className="service-item d-flex position-relative h-100">
-                                            <h4 className="title"><a href="#" className="stretched-link">Health and
-                                                weight (young people)</a></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </div>
-
             </div>
-
         </section>
     );
 }
