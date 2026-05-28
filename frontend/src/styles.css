@@ -1,0 +1,204 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    /*background: #f4f6f8;*/
+    color: #1f2937;
+    font-family: Arial, sans-serif;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+input,
+textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    padding: 0.75rem;
+    width: 100%;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.app {
+    margin: 0 auto;
+    max-width: 960px;
+    padding: 2rem;
+}
+
+.header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    /*margin-bottom: 2rem;*/
+    /*padding-bottom: 1rem;*/
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.link-button {
+    background: transparent;
+    color: #4b5563;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.link-button:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
+.landing-card {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.landing-card h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.landing-card p {
+    font-size: 1.25rem;
+    color: #4b5563;
+    margin-bottom: 2.5rem;
+}
+
+.button-link {
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    transition: background 0.2s;
+}
+
+.button-link:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+.button-link.secondary {
+    background: #64748b;
+}
+
+.button-link.secondary:hover {
+    background: #475569;
+}
+
+.button-link.small {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.nav-links .link-button, 
+.nav-links a.link-button {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.header h1 {
+    margin-bottom: 0.25rem;
+}
+
+.card,
+.post-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+}
+
+.form {
+    display: grid;
+    gap: 1rem;
+}
+
+.actions,
+.post-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.secondary-button {
+    background: #64748b;
+}
+
+.secondary-button:hover {
+    background: #475569;
+}
+
+.danger-button {
+    background: #dc2626;
+}
+
+.danger-button:hover {
+    background: #b91c1c;
+}
+
+.error {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.hint {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.posts h2 {
+    margin-top: 2rem;
+}
+
+.post-card h3 {
+    margin-top: 0;
+}
+
+.post-card p {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.post-card small {
+    color: #64748b;
+}

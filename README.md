@@ -1,1 +1,1 @@
-# Health Promotions
+# Health Promotion, Education and Strategic Communication

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: promotions_postgres
+    environment:
+      POSTGRES_DB: promotions_db
+      POSTGRES_USER: postsuser
+      POSTGRES_PASSWORD: postspassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: promotions_backend
+    environment:
+      DATABASE_URL: postgres://postsuser:postspassword@postgres:5432/promotions_db?sslmode=disable
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123
+      JWT_SECRET: -secret
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: promotions_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
