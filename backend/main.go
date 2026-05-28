@@ -334,13 +334,13 @@ func getCategories(w http.ResponseWriter, r *http.Request) {
 			ORDER BY name ASC
 		`, c.ID)
 		if err == nil {
-			defer subRows.Close()
 			for subRows.Next() {
 				var sc DiseaseSubCategory
 				if err := subRows.Scan(&sc.ID, &sc.CategoryID, &sc.Name, &sc.Description, &sc.CreatedAt, &sc.UpdatedAt); err == nil {
 					c.SubCategories = append(c.SubCategories, sc)
 				}
 			}
+			subRows.Close()
 		}
 
 		categories = append(categories, c)
@@ -510,13 +510,13 @@ func getSubCategories(w http.ResponseWriter, r *http.Request) {
 			ORDER BY created_at DESC
 		`, sc.ID)
 		if err == nil {
-			defer artRows.Close()
 			for artRows.Next() {
 				var a Article
 				if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt); err == nil {
 					sc.Articles = append(sc.Articles, a)
 				}
 			}
+			artRows.Close()
 		}
 
 		subcategories = append(subcategories, sc)
@@ -556,6 +556,22 @@ func getSubCategory(w http.ResponseWriter, r *http.Request) {
 		for artRows.Next() {
 			var a Article
 			if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt); err == nil {
+				// Fetch SubArticles for each article
+				subArtRows, err := db.Query(`
+					SELECT id, article_id, title, content, created_at, updated_at
+					FROM sub_articles
+					WHERE article_id = $1
+					ORDER BY created_at ASC
+				`, a.ID)
+				if err == nil {
+					for subArtRows.Next() {
+						var sa SubArticle
+						if err := subArtRows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt); err == nil {
+							a.SubArticles = append(a.SubArticles, sa)
+						}
+					}
+					subArtRows.Close()
+				}
 				sc.Articles = append(sc.Articles, a)
 			}
 		}

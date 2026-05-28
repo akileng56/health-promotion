@@ -75,6 +75,12 @@ export async function getSubCategories(category_id) {
     return response.json();
 }
 
+export async function getSubCategory(id) {
+    const response = await fetch(`${API_BASE_URL}/subcategories/${id}`);
+    if (!response.ok) throw new Error("Failed to fetch subcategory");
+    return response.json();
+}
+
 export async function createSubCategory(token, subcategory) {
     const response = await fetch(`${API_BASE_URL}/admin/subcategories`, {
         method: "POST",

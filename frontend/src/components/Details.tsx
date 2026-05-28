@@ -1,245 +1,188 @@
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getSubCategory, getSubCategories } from '../api';
+
+interface SubArticle {
+    id: number;
+    title: string;
+    content: string;
+}
+
+interface Article {
+    id: number;
+    title: string;
+    content: string;
+    created_at: string;
+    subarticles?: SubArticle[];
+}
+
+interface SubCategory {
+    id: number;
+    category_id: number;
+    name: string;
+    description: string;
+    articles?: Article[];
+}
+
 const Details = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const subCategoryId = searchParams.get('subcategory_id');
+    
+    const [subcategory, setSubcategory] = useState<SubCategory | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedSaId, setSelectedSaId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (subCategoryId) {
+            setLoading(true);
+            getSubCategory(subCategoryId)
+                .then(data => {
+                    setSubcategory(data);
+                    setLoading(false);
+                    setSelectedSaId(null); // Reset selection on subcategory change
+                })
+                .catch(err => {
+                    setError(err.message);
+                    setLoading(false);
+                });
+        }
+    }, [subCategoryId]);
+
+    if (loading) return <div className="container" style={{ padding: '5rem', textAlign: 'center' }}><h3>Loading...</h3></div>;
+    if (error) return <div className="container" style={{ padding: '5rem', textAlign: 'center' }}><div className="error text-danger">{error}</div></div>;
+    if (!subcategory) return <div className="container" style={{ padding: '5rem', textAlign: 'center' }}><h3>Subcategory not found</h3></div>;
+
+    // Flatten all subarticles for the sidebar list
+    const allSubArticles = subcategory.articles?.flatMap(art => art.subarticles || []) || [];
+
     return (
         <>
             <div className="page-title light-background">
                 <div className="container d-lg-flex justify-content-between align-items-center">
-                    <h1 className="mb-2 mb-lg-0">Ebola In Uganda</h1>
+                    <h1 className="mb-2 mb-lg-0">{subcategory.name}</h1>
                     <nav className="breadcrumbs">
                         <ol>
-                            <li><a onClick={() => navigate('/')}>Home</a></li>
-                            <li className="current">Ebola Details</li>
+                            <li><a onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>Home</a></li>
+                            <li className="current">{subcategory.name} Details</li>
                         </ol>
                     </nav>
                 </div>
             </div>
 
-            <div className="container">
+            <div className="container py-5">
                 <div className="row">
-
                     <div className="col-lg-8">
-                        <section id="blog-details" className="blog-details section">
+                        <section id="blog-details" className="blog-details section-details">
                             <div className="container">
+                                {subcategory.articles && subcategory.articles.length > 0 ? (
+                                    subcategory.articles.map((article) => {
+                                        const subsToShow = selectedSaId 
+                                            ? article.subarticles?.filter(sa => sa.id === selectedSaId)
+                                            : []; // Only show subarticles when one is specifically selected
+                                        
+                                        // If a subarticle is selected but doesn't belong to this article, don't render this article
+                                        if (selectedSaId && (!subsToShow || subsToShow.length === 0)) return null;
 
-                                <article className="article">
+                                        return (
+                                            <article className="article" key={article.id} style={{
+                                                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                borderRadius: '8px',
+                                                backgroundColor: '#fff'
+                                            }}>
+                                                <h2 className="title" style={{ color: '#2c4964', marginBottom: '1rem' }}>{article.title}</h2>
 
-                                    <div className="post-img">
-                                        <img src="assets/img/blog/ebola.jpeg" alt="" className="img-fluid"/>
-                                    </div>
+                                                {/* Only show main article content if no specific subarticle is selected */}
+                                                {!selectedSaId && (
+                                                    <div className="content" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                                        <div dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br/>') }} />
+                                                    </div>
+                                                )}
 
-                                    <h2 className="title">Uganda confirms Ebola outbreak, reassures citizens of health
-                                        measures</h2>
-
-                                    <div className="meta-top">
-                                        <ul>
-                                            <li className="d-flex align-items-center"><i className="bi bi-clock"></i> <a
-                                                href="ebola-details.html">
-                                                <time dateTime="2026-01-29">January 29, 2026</time>
-                                            </a></li>
-                                        </ul>
-                                    </div>
-
-                                    <div className="content">
-                                        <p>
-                                            The government of Uganda has assured citizens that it is in “full control”
-                                            of their safety as the country battles a fresh outbreak of the Sudan strain
-                                            of the Ebola virus that was confirmed on January 30.
-
-                                            <br/> Dr. Diana Atwine, Permanent Secretary of the Uganda Ministry of
-                                            Health, said in a statement that a 32-year-old male nurse died of Ebola in
-                                            Kampala on Wednesday, January 29, following a laboratory confirmation from
-                                            three national reference laboratories.
-
-                                            <br/> “The Government of Uganda would like to reassure the public that the
-                                            Ministry of Health is in full control of the situation and continue to safe
-                                            guard the lives of all people in Uganda,” reads the statement.
-                                        </p>
-                                        <br/>
-                                        <p>
-                                            According to Dr. Atwine, this is the eighth Ebola outbreak in Uganda.
-                                            <br/><br/>
-                                            Narrating how the nurse died after seeking medical attention in several
-                                            health facilities, Dr. Atwine said, “The patient presented with a five-day
-                                            history of high fever, chest pain, and difficulty in breathing, which later
-                                            progressed to unexplained bleeding from multiple body sites. The patient
-                                            experienced multi-organ failure and succumbed.”
-                                        </p>
-
-                                        <blockquote>
-                                            <p>
-                                                Uganda’s government has warned people to avoid physical contact with
-                                                individuals exhibiting Ebola symptoms, asking all citizens to maintain
-                                                strict hand hygiene by washing hands regularly with soap and water or
-                                                using hand sanitizers.
-                                            </p>
-                                        </blockquote>
-                                        <iframe
-                                            width="770"
-                                            height="468"
-                                            src="https://www.youtube.com/embed/Kh9VYpn2qak"
-                                            title="Ebola Outbreak In DR Congo & Uganda"
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            referrerPolicy="strict-origin-when-cross-origin"
-                                            allowFullScreen>
-                                        </iframe>
-
-                                        <h3>Government interventions</h3>
-                                        <p>
-                                            The Ministry of Health has since activated the Incident Management Team and
-                                            dispatched Rapid Response Teams to both Mbale City and Saidina Abubakar
-                                            Islamic Hospital in Matugga to list all the contacts and isolate them. This
-                                            is to help curb the spread of the disease.
-                                        </p>
-
-                                        <p>
-                                            “Facilities have been identified for isolation of all listed contacts. Any
-                                            contact that develops symptoms will be transferred to a designated isolation
-                                            center,” said Dr. Atwine. “Vaccination of all contacts of the deceased
-                                            against Ebola Virus Disease is set to commence immediately. The available
-                                            doses of the Ebola Vaccine is prioritized for contacts and health workers.”
-                                        </p>
-
-                                        <p>
-                                            Additionally, Uganda’s Ministry of Health is organizing to carry out
-                                            dignified burial of the deceased to prevent spread of the virus and the
-                                            “epidemiological team has been dispatched to activate the Regional Emergency
-                                            Operation Centers in Kampala and Mbale.”
-                                        </p>
-
-                                        <iframe
-                                            width="770"
-                                            height="468"
-                                            src="https://www.youtube.com/embed/7iMgGxcDVo0"
-                                            title="Ebola Outbreak In DR Congo & Uganda"
-                                            frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            referrerPolicy="strict-origin-when-cross-origin"
-                                            allowFullScreen>
-                                        </iframe>
-
-                                        <h3>Appeal to the Public</h3>
-                                        <p>
-                                            Uganda’s government has warned people to avoid physical contact with
-                                            individuals exhibiting Ebola symptoms, asking all citizens to maintain
-                                            strict hand hygiene by washing hands regularly with soap and water or using
-                                            hand sanitizers.
-                                        </p>
-                                        <p>
-                                            Ebola is typically spread through direct contact with bodily fluids from
-                                            infected patients.
-                                        </p>
-                                        <p>
-                                            Dr. Atwine underscored that a suspected Ebola case presents symptoms such as
-                                            sudden onset fever, fatigue, chest pain, diarrhea, vomiting, unexplained
-                                            bleeding, yellowing of the eyes, restlessness and headache, among others.
-                                        </p>
-
-                                    </div>
-
-                                    <div className="meta-bottom">
-                                        <i className="bi bi-folder"></i>
-                                        <ul className="cats">
-                                            <li><a href="#">Cases</a></li>
-                                        </ul>
-
-                                        <i className="bi bi-tags"></i>
-                                        <ul className="tags">
-                                            <li><a href="#">Interventions</a></li>
-                                            <li><a href="#">Tips</a></li>
-                                            <li><a href="#">Appeal</a></li>
-                                        </ul>
-                                    </div>
-
-
-                                </article>
+                                                {subsToShow && subsToShow.length > 0 && (
+                                                    <div className="subarticles" style={{ 
+                                                        marginTop: selectedSaId ? '0' : '2.5rem', 
+                                                        paddingLeft: '1.5rem',
+                                                        backgroundColor: '#f8f9fa',
+                                                        padding: '1.5rem'
+                                                    }}>
+                                                        {subsToShow.map((sa) => (
+                                                            <div key={sa.id} style={{ marginBottom: selectedSaId ? '0' : '2rem' }}>
+                                                                <h4 style={{ fontWeight: 'bold', color: '#1977cc' }}>{sa.title}</h4>
+                                                                <div style={{ fontSize: '1rem' }} dangerouslySetInnerHTML={{ __html: sa.content.replace(/\n/g, '<br/>') }} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </article>
+                                        );
+                                    })
+                                ) : (
+                                    <article className="article" style={{ padding: '2rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                                        <h2 className="title">No detailed articles available</h2>
+                                        <div className="content">
+                                            <p>{subcategory.description}</p>
+                                        </div>
+                                    </article>
+                                )}
                             </div>
                         </section>
-
                     </div>
 
                     <div className="col-lg-4 sidebar">
-
-                        <div className="widgets-container">
-
-                            <div className="recent-posts-widget widget-item">
-
-                                <h3 className="widget-title">Recent Posts</h3>
-
-                                <div className="post-item">
-                                    <img src="assets/img/recent/recent-1.jpg" alt="" className="flex-shrink-0"/>
-                                    <div>
-                                        <h4><a href="ebola-details.html">Ebola cases in Uganda rise to 9, while 265
-                                            under quarantine</a></h4>
-                                        <time dateTime="2020-01-01">Jan 26, 2026</time>
-                                    </div>
-                                </div>
-
-
-                                <div className="post-item">
-                                    <img src="assets/img/blog/blog-recent-2.jpg" alt="" className="flex-shrink-0"/>
-                                    <div>
-                                        <h4><a href="ebola-details.html">Ebola Virus Disease outbreak spills over into
-                                            Uganda</a></h4>
-                                        <time dateTime="2020-01-01">Jun 11, 2019</time>
-                                    </div>
-                                </div>
-
-
-                                <div className="post-item">
-                                    <img src="assets/img/blog/blog-recent-3.jpg" alt="" className="flex-shrink-0"/>
-                                    <div>
-                                        <h4><a href="ebola-details.html">Uganda works to contain Ebola outbreak</a></h4>
-                                        <time dateTime="2020-01-01">Oct 21, 2022</time>
-                                    </div>
-                                </div>
-
-
-                                <div className="post-item">
-                                    <img src="assets/img/blog/blog-recent-4.jpg" alt="" className="flex-shrink-0"/>
-                                    <div>
-                                        <h4><a href="ebola-details.html">Uganda starts clinical trial of vaccine for
-                                            Sudan strain of Ebola</a></h4>
-                                        <time dateTime="2020-01-01">Feb 4, 2025</time>
-                                    </div>
-                                </div>
-
-
-                                <div className="post-item">
-                                    <img src="assets/img/blog/blog-recent-5.jpg" alt="" className="flex-shrink-0"/>
-                                    <div>
-                                        <h4><a href="ebola-details.html">Ebola outbreak spreads in Kampala</a></h4>
-                                        <time dateTime="2020-01-01">Jan 1, 2020</time>
-                                    </div>
-                                </div>
-
-
-                            </div>
-
-                            <div className="tags-widget widget-item">
-
-                                <h3 className="widget-title">Tags</h3>
-                                <ul>
-                                    <li><a href="#">Ebola</a></li>
-                                    <li><a href="#">Outbreak</a></li>
-                                    <li><a href="#">Tips</a></li>
-                                    <li><a href="#">Cases</a></li>
-                                    <li><a href="#">Confirmed</a></li>
-                                    <li><a href="#">Appeal</a></li>
-                                    <li><a href="#">Interventions</a></li>
-                                    <li><a href="#">Reported</a></li>
-                                    <li><a href="#">Suspected</a></li>
-                                    <li><a href="#">Deaths</a></li>
+                        <div className="widgets-container" style={{ position: 'sticky', top: '100px' }}>
+                            <div className="recent-posts-widget widget-item" style={{ 
+                                padding: '1.5rem', 
+                                backgroundColor: '#fff', 
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                borderRadius: '8px',
+                                marginBottom: '2rem'
+                            }}>
+                                <h3 className="widget-title" style={{ fontSize: '1.25rem', borderBottom: '2px solid #1977cc', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                    {subcategory.name}
+                                </h3>
+                                
+                                {/*<h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2c4964', marginBottom: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>*/}
+                                {/*    Contents*/}
+                                {/*</h4>*/}
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    <li style={{ marginBottom: '0.75rem' }}>
+                                        <a 
+                                            onClick={() => setSelectedSaId(null)} 
+                                            style={{ 
+                                                cursor: 'pointer', 
+                                                color: selectedSaId === null ? '#1977cc' : '#2c4964',
+                                                fontWeight: selectedSaId === null ? 'bold' : 'normal',
+                                                display: 'block',
+                                                transition: '0.3s'
+                                            }}
+                                        >
+                                            <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem' }}></i>
+                                            Overview
+                                        </a>
+                                    </li>
+                                    {allSubArticles.map(sa => (
+                                        <li key={sa.id} style={{ marginBottom: '0.75rem' }}>
+                                            <a 
+                                                onClick={() => setSelectedSaId(sa.id)} 
+                                                style={{ 
+                                                    cursor: 'pointer', 
+                                                    color: selectedSaId === sa.id ? '#1977cc' : '#2c4964',
+                                                    fontWeight: selectedSaId === sa.id ? 'bold' : 'normal',
+                                                    display: 'block',
+                                                    transition: '0.3s'
+                                                }}
+                                            >
+                                                <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem' }}></i>
+                                                {sa.title}
+                                            </a>
+                                        </li>
+                                    ))}
                                 </ul>
-
                             </div>
-
-
                         </div>
-
                     </div>
-
                 </div>
             </div>
         </>

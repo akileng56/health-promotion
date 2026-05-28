@@ -29,14 +29,6 @@ const HeaderComponent = () => {
                                 A-Z
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink
-                                to="/admin"
-                                className={({ isActive }) => isActive ? "active" : ""}
-                            >
-                                Admin
-                            </NavLink>
-                        </li>
                     </ul>
                 </nav>
             </div>

@@ -12,7 +12,11 @@ import {
     getArticles,
     createArticle,
     updateArticle,
-    deleteArticle
+    deleteArticle,
+    getSubArticles,
+    createSubArticle,
+    updateSubArticle,
+    deleteSubArticle
 } from '../../api';
 
 interface Category {
@@ -35,6 +39,14 @@ interface Article {
     subcategory_id: number;
     title: string;
     content: string;
+    subarticles?: SubArticle[];
+}
+
+interface SubArticle {
+    id: number;
+    article_id: number;
+    title: string;
+    content: string;
 }
 
 const Overview = () => {
@@ -53,9 +65,13 @@ const Overview = () => {
 
     // Articles State
     const [articles, setArticles] = useState<Article[]>([]);
+    const [activeArticle, setActiveArticle] = useState<Article | null>(null);
+
+    // SubArticles State
+    const [subarticles, setSubarticles] = useState<SubArticle[]>([]);
 
     // Modal State
-    const [modalType, setModalType] = useState<'category' | 'subcategory' | 'article' | null>(null);
+    const [modalType, setModalType] = useState<'category' | 'subcategory' | 'article' | 'subarticle' | null>(null);
     const [editingItem, setEditingItem] = useState<any | null>(null);
     const [formName, setFormName] = useState('');
     const [formDescription, setFormDescription] = useState('');
@@ -95,6 +111,15 @@ const Overview = () => {
         }
     };
 
+    const fetchSubArticles = async (articleId: number) => {
+        try {
+            const data = await getSubArticles(articleId);
+            setSubarticles(data);
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -119,6 +144,8 @@ const Overview = () => {
         setSubcategories([]);
         setActiveSubCategory(null);
         setArticles([]);
+        setActiveArticle(null);
+        setSubarticles([]);
     };
 
     // --- Modal Handlers ---
@@ -146,6 +173,15 @@ const Overview = () => {
         setEditingItem(article);
         setFormTitle(article ? article.title : '');
         setFormContent(article ? article.content : '');
+        setFormName('');
+        setFormDescription('');
+    };
+
+    const openSubArticleModal = (subarticle: SubArticle | null = null) => {
+        setModalType('subarticle');
+        setEditingItem(subarticle);
+        setFormTitle(subarticle ? subarticle.title : '');
+        setFormContent(subarticle ? subarticle.content : '');
         setFormName('');
         setFormDescription('');
     };
@@ -182,6 +218,13 @@ const Overview = () => {
                     await createArticle(token, { subcategory_id: activeSubCategory!.id, title: formTitle, content: formContent });
                 }
                 fetchArticles(activeSubCategory!.id);
+            } else if (modalType === 'subarticle') {
+                if (editingItem) {
+                    await updateSubArticle(token, editingItem.id, { article_id: activeArticle!.id, title: formTitle, content: formContent });
+                } else {
+                    await createSubArticle(token, { article_id: activeArticle!.id, title: formTitle, content: formContent });
+                }
+                fetchSubArticles(activeArticle!.id);
             }
             closeModals();
         } catch (err: any) {
@@ -214,10 +257,21 @@ const Overview = () => {
     };
 
     const handleDeleteArticle = async (id: number) => {
-        if (!window.confirm('Delete this article?')) return;
+        if (!window.confirm('Delete article and its subarticles?')) return;
         try {
             await deleteArticle(token, id);
+            if (activeArticle?.id === id) setActiveArticle(null);
             fetchArticles(activeSubCategory!.id);
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const handleDeleteSubArticle = async (id: number) => {
+        if (!window.confirm('Delete this subarticle?')) return;
+        try {
+            await deleteSubArticle(token, id);
+            fetchSubArticles(activeArticle!.id);
         } catch (err: any) {
             setError(err.message);
         }
@@ -250,17 +304,23 @@ const Overview = () => {
 
             {/* Breadcrumbs */}
             <div style={{ marginBottom: '1rem', color: '#64748b' }}>
-                <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setActiveCategory(null); setActiveSubCategory(null); }}>Categories</span>
+                <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setActiveCategory(null); setActiveSubCategory(null); setActiveArticle(null); }}>Categories</span>
                 {activeCategory && (
                     <>
                         {' > '}
-                        <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setActiveSubCategory(null); fetchSubCategories(activeCategory.id); }}>{activeCategory.name}</span>
+                        <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setActiveSubCategory(null); setActiveArticle(null); fetchSubCategories(activeCategory.id); }}>{activeCategory.name}</span>
                     </>
                 )}
                 {activeSubCategory && (
                     <>
                         {' > '}
-                        <span>{activeSubCategory.name}</span>
+                        <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setActiveArticle(null); fetchArticles(activeSubCategory.id); }}>{activeSubCategory.name}</span>
+                    </>
+                )}
+                {activeArticle && (
+                    <>
+                        {' > '}
+                        <span>{activeArticle.title}</span>
                     </>
                 )}
             </div>
@@ -332,12 +392,12 @@ const Overview = () => {
                                 </tr>
                             ))}
                             {subcategories.length === 0 && (
-                                <tr><td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No subcategories found.</td></tr>
+                                <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No subcategories found.</td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-            ) : (
+            ) : !activeArticle ? (
                 <div className="card">
                     <div className="section-header">
                         <h2>Articles in "{activeSubCategory.name}"</h2>
@@ -354,7 +414,9 @@ const Overview = () => {
                         <tbody>
                             {articles.map((a) => (
                                 <tr key={a.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                                    <td style={{ padding: '0.75rem' }}>{a.title}</td>
+                                    <td style={{ padding: '0.75rem' }}>
+                                        <button className="link-button" onClick={() => { setActiveArticle(a); fetchSubArticles(a.id); }}>{a.title}</button>
+                                    </td>
                                     <td style={{ padding: '0.75rem' }}>{a.content.substring(0, 100)}...</td>
                                     <td style={{ padding: '0.75rem' }}>
                                         <div className="actions" style={{ marginTop: 0 }}>
@@ -370,6 +432,39 @@ const Overview = () => {
                         </tbody>
                     </table>
                 </div>
+            ) : (
+                <div className="card">
+                    <div className="section-header">
+                        <h2>Sub-Articles of "{activeArticle.title}"</h2>
+                        <button onClick={() => openSubArticleModal()}>Add Sub-Article</button>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
+                                <th style={{ padding: '0.75rem' }}>Title</th>
+                                <th style={{ padding: '0.75rem' }}>Content Preview</th>
+                                <th style={{ padding: '0.75rem' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {subarticles.map((sa) => (
+                                <tr key={sa.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                    <td style={{ padding: '0.75rem' }}>{sa.title}</td>
+                                    <td style={{ padding: '0.75rem' }}>{sa.content.substring(0, 100)}...</td>
+                                    <td style={{ padding: '0.75rem' }}>
+                                        <div className="actions" style={{ marginTop: 0 }}>
+                                            <button className="link-button" style={{ color: '#2563eb' }} onClick={() => openSubArticleModal(sa)}>Edit</button>
+                                            <button className="link-button" style={{ color: '#dc2626' }} onClick={() => handleDeleteSubArticle(sa.id)}>Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {subarticles.length === 0 && (
+                                <tr><td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No sub-articles found.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
             {/* Generic Modal */}
@@ -378,7 +473,7 @@ const Overview = () => {
                     <div className="card" style={{ width: '100%', maxWidth: '600px' }}>
                         <h3>{editingItem ? 'Edit' : 'Add'} {modalType.charAt(0).toUpperCase() + modalType.slice(1)}</h3>
                         <form className="form" onSubmit={handleSave}>
-                            {modalType === 'article' ? (
+                            {modalType === 'article' || modalType === 'subarticle' ? (
                                 <>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Title</label>
