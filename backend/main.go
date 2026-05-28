@@ -501,6 +501,24 @@ func getSubCategories(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "failed to scan subcategory")
 			return
 		}
+
+		// Fetch Articles for each subcategory
+		artRows, err := db.Query(`
+			SELECT id, subcategory_id, title, content, created_at, updated_at
+			FROM articles
+			WHERE subcategory_id = $1
+			ORDER BY created_at DESC
+		`, sc.ID)
+		if err == nil {
+			defer artRows.Close()
+			for artRows.Next() {
+				var a Article
+				if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt); err == nil {
+					sc.Articles = append(sc.Articles, a)
+				}
+			}
+		}
+
 		subcategories = append(subcategories, sc)
 	}
 
