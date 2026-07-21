@@ -6,35 +6,27 @@ const HeaderComponent = () => {
 
                 <a href="/" className="logo d-flex align-items-center me-auto">
                     <img src="/assets/img/logo.png" alt="logo-title"/>
-                    <h1 className="sitename">Health Promotions</h1>
+                    <h1 className="sitename">Health Experience Uganda</h1>
                 </a>
 
                 <nav id="navmenu" className="navmenu">
                     <ul>
                         <li>
-                            <NavLink to="/" end className={({ isActive }) => isActive ? "active" : ""}>
+                            <NavLink to="/" end className={({ isActive }: { isActive: boolean }) => isActive ? "active" : ""}>
                                 Home
                             </NavLink>
                         </li>
                         <li>
-                            <NavLink to="/categories" className={({ isActive }) => isActive ? "active" : ""}>
+                            <NavLink to="/categories" className={({ isActive }: { isActive: boolean }) => isActive ? "active" : ""}>
                                 Disease Categories
                             </NavLink>
                         </li>
                         <li>
                             <NavLink
                                 to="/a-z"
-                                className={({ isActive }) => isActive ? "active" : ""}
+                                className={({ isActive }: { isActive: boolean }) => isActive ? "active" : ""}
                             >
                                 A-Z
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/admin"
-                                className={({ isActive }) => isActive ? "active" : ""}
-                            >
-                                Admin
                             </NavLink>
                         </li>
                     </ul>

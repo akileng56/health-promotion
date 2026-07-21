@@ -4,7 +4,6 @@
 
 body {
     margin: 0;
-    /*background: #f4f6f8;*/
     color: #1f2937;
     font-family: Arial, sans-serif;
 }
@@ -38,7 +37,7 @@ textarea {
 
 .app {
     margin: 0 auto;
-    max-width: 960px;
+    max-width: 70%;
     padding: 2rem;
 }
 
@@ -46,8 +45,6 @@ textarea {
     align-items: center;
     display: flex;
     justify-content: space-between;
-    /*margin-bottom: 2rem;*/
-    /*padding-bottom: 1rem;*/
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -201,4 +198,222 @@ textarea {
 
 .post-card small {
     color: #64748b;
+}
+
+/* Quill Editor Styles */
+.ql-container {
+    font-family: inherit !important;
+    font-size: 1rem !important;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.ql-toolbar {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background: #f9fafb;
+}
+
+.ql-editor {
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.ql-editor img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.ql-editor iframe.ql-video {
+    display: block;
+    margin: 1rem auto;
+    max-width: 100%;
+}
+
+.content-image-style, .article img {
+    width: 100%;
+    height: auto;
+    border-radius: 3px;
+}
+
+.item-category {
+    color: #2563eb;
+}
+
+.item-category:hover {
+    background: transparent;
+    text-decoration: underline;
+    color: #2563eb;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    background: transparent !important;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    background: transparent !important;
+}
+
+.item-edit {
+    color: #6c757d;
+}
+
+.item-delete {
+    color: #dc2626;
+}
+
+/* ==========================================================================
+   Categories & Subcategories Views (Custom overrides)
+   ========================================================================== */
+
+.features .container.section-title {
+    margin-bottom: 3rem !important;
+    padding-bottom: 0px !important;
+}
+.features .container.section-title h2 {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.25rem !important;
+}
+.features .container.section-title p {
+    font-size: 1.1rem !important;
+    margin-bottom: 0 !important;
+}
+
+.features .nav-tabs {
+    border: none;
+    gap: 0.5rem;
+}
+
+.features .nav-link {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 0.7rem 1.20rem;
+    font-weight: 600;
+    color: #475569;
+    background: #ffffff;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    text-align: left;
+    width: 100%;
+}
+
+.features .nav-link:hover {
+    background: #f8fafc;
+    color: #1977cc;
+    border-color: #cbd5e1 !important;
+    transform: translateX(4px);
+}
+
+.features .nav-link.active {
+    background: #1977cc !important;
+    color: #ffffff !important;
+    border-color: #1977cc !important;
+    box-shadow: 0 4px 12px rgba(25, 119, 204, 0.18);
+}
+
+.features .tab-content {
+    background: #ffffff;
+    border: 1px solid #eef2f6;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+}
+
+.tab-pane-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c4964;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #1977cc;
+    padding-left: 0.75rem;
+}
+
+/* Subcategories Cards Layout */
+.subcat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.subcat-card {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    height: 100%;
+    position: relative;
+}
+
+.subcat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(25, 119, 204, 0.15), 0 4px 8px -2px rgba(0, 0, 0, 0.03);
+    border-color: #dbeafe;
+}
+
+.subcat-icon-wrapper {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1977cc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.subcat-card:hover .subcat-icon-wrapper {
+    background: #1977cc;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.subcat-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2c4964;
+    margin: 0;
+    line-height: 1.4;
+    transition: color 0.2s ease;
+}
+
+.subcat-card:hover .subcat-title {
+    color: #1977cc;
+}
+
+.subcat-description {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.subcat-action {
+    margin-top: auto;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1977cc;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: gap 0.2s ease;
+}
+
+.subcat-card:hover .subcat-action {
+    gap: 0.5rem;
 }

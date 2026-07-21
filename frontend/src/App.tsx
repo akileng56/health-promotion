@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import HeaderComponent from "./components/header.jsx";
-import FooterComponent from "./components/footer.jsx";
-import Categories from "./components/Categories.jsx";
+import HeaderComponent from "./components/header";
+import FooterComponent from "./components/footer";
+import Categories from "./components/Categories";
 import Home from "./components/Home";
 import A_Z from "./components/A-Z";
 import Overview from "./components/admin/Overview";

@@ -1,6 +1,39 @@
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+declare var bootstrap: any;
+
 const Home = () => {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const carouselElement = document.querySelector('#hero-carousel');
+        if (carouselElement && typeof bootstrap !== 'undefined') {
+            const carousel = new bootstrap.Carousel(carouselElement, {
+                interval: 5000,
+                ride: 'carousel'
+            });
+
+            // Generate indicators if the list is empty
+            const indicators = carouselElement.querySelector('.carousel-indicators');
+            if (indicators && indicators.children.length === 0) {
+                const items = carouselElement.querySelectorAll('.carousel-item');
+                items.forEach((_, index) => {
+                    const btn = document.createElement('button');
+                    btn.setAttribute('type', 'button');
+                    btn.setAttribute('data-bs-target', '#hero-carousel');
+                    btn.setAttribute('data-bs-slide-to', index.toString());
+                    btn.setAttribute('aria-label', `Slide ${index + 1}`);
+                    if (index === 0) {
+                        btn.classList.add('active');
+                        btn.setAttribute('aria-current', 'true');
+                    }
+                    indicators.appendChild(btn);
+                });
+            }
+        }
+    }, []);
+
     return (
         <>
             <section id="hero" className="hero section dark-background">
@@ -11,7 +44,7 @@ const Home = () => {
                     <div className="carousel-item active">
                         <img src="/assets/img/hero-carousel/home-carousel-1.jpg" alt="Health Research Stories 1"/>
                         <div className="carousel-container">
-                            <h2>Welcome to Uganda Health Promotions<br/></h2>
+                            <h2>Health Experience Uganda<br/></h2>
                             <p>Uganda Health Promotions presents analysed collections of interviews from health research
                                 studies. Thousands of people have shared their stories to help others see, hear or read
                                 what
@@ -25,7 +58,7 @@ const Home = () => {
                     <div className="carousel-item">
                         <img src="/assets/img/hero-carousel/home-carousel.jpg" alt="Health Research Stories 2"/>
                         <div className="carousel-container">
-                            <h2>Welcome to Uganda Health Promotions</h2>
+                            <h2>Health Experience Uganda</h2>
                             <p>Uganda Health Promotions presents analysed collections of interviews from health research
                                 studies. Thousands of people have shared their stories to help others see, hear or read
                                 what
@@ -36,15 +69,15 @@ const Home = () => {
                     </div>
 
 
-                    <a className="carousel-control-prev" href="#hero-carousel" role="button" data-bs-slide="prev">
+                    <button className="carousel-control-prev" type="button" data-bs-target="#hero-carousel" data-bs-slide="prev">
                         <span className="carousel-control-prev-icon bi bi-chevron-left" aria-hidden="true"></span>
-                    </a>
+                    </button>
 
-                    <a className="carousel-control-next" href="#hero-carousel" role="button" data-bs-slide="next">
+                    <button className="carousel-control-next" type="button" data-bs-target="#hero-carousel" data-bs-slide="next">
                         <span className="carousel-control-next-icon bi bi-chevron-right" aria-hidden="true"></span>
-                    </a>
+                    </button>
 
-                    <ol className="carousel-indicators"></ol>
+                    <div className="carousel-indicators"></div>
 
                 </div>
 

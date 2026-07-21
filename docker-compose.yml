@@ -3,35 +3,47 @@ services:
     image: postgres:16-alpine
     container_name: promotions_postgres
     environment:
-      POSTGRES_DB: promotions_db
-      POSTGRES_USER: postsuser
-      POSTGRES_PASSWORD: postspassword
+      POSTGRES_DB: ${DB_NAME:-promotions_db}
+      POSTGRES_USER: ${DB_USER:-postsuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postspassword}
     ports:
-      - "5432:5432"
+      - "5478:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.dev
     container_name: promotions_backend
+    env_file:
+      - ./backend/.env
     environment:
-      DATABASE_URL: postgres://postsuser:postspassword@postgres:5432/promotions_db?sslmode=disable
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin123
-      JWT_SECRET: -secret
-      PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      CORS_ORIGIN: http://localhost:3218
+      FRONTEND_URL: http://localhost:3218
     ports:
-      - "8080:8080"
+      - "8421:8080"
+    volumes:
+      - ./backend:/app
+      - /app/tmp
+      - ./backend/uploads:/app/uploads
     depends_on:
       - postgres
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.dev
     container_name: promotions_frontend
+    env_file:
+      - ./frontend/.env
     ports:
-      - "3000:80"
+      - "3218:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 

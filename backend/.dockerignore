@@ -1,0 +1,6 @@
+tmp
+uploads
+.env
+.git
+.DS_Store
+*.log

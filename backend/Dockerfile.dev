@@ -1,0 +1,12 @@
+FROM golang:alpine
+
+WORKDIR /app
+
+RUN wget -qO- https://raw.githubusercontent.com/air-verse/air/master/install.sh | sh -s -- -b /go/bin
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+CMD ["air", "-c", ".air.toml"]

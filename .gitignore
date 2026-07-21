@@ -50,8 +50,7 @@ jspm_packages
 
 .DS_Store
 
-/dist
-
+dist/
 /dist_keycloak
 /build
 /storybook-static
@@ -59,3 +58,17 @@ jspm_packages
 # build output of `jsx-email`
 /.rendered
 .idea/
+backend/uploads/*
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+
+# Temporary development and scratch files
+scratch/

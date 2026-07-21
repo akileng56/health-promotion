@@ -727,6 +727,10 @@ section,
   overflow: clip;
 }
 
+.section-details {
+  padding: 0 !important;
+}
+
 @media (max-width: 1199px) {
 
   section,
@@ -1956,7 +1960,7 @@ section,
 
 .blog-details .article {
   background-color: var(--surface-color);
-  padding: 30px;
+  padding: 25px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -1970,7 +1974,7 @@ section,
   font-size: 28px;
   font-weight: 700;
   padding: 0;
-  margin: 30px 0;
+  /*margin: 30px 0;*/
 }
 
 .blog-details .content {
@@ -2327,8 +2331,8 @@ section,
 --------------------------------------------------------------*/
 .widgets-container {
   background-color: var(--surface-color);
-  padding: 30px;
-  margin: 60px 0 30px 0;
+  /*padding: 30px;*/
+  /*margin: 60px 0 30px 0;*/
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -2350,7 +2354,6 @@ section,
 
 .search-widget form {
   background: var(--background-color);
-  border: 1px solid color-mix(in srgb, var(--default-color), transparent 70%);
   padding: 3px 10px;
   position: relative;
   transition: 0.3s;
