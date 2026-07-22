@@ -573,7 +573,7 @@ func getSubCategories(w http.ResponseWriter, r *http.Request) {
 			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
 			WHERE subcategory_id = $1
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`, sc.ID)
 		if err == nil {
 			for artRows.Next() {
@@ -615,7 +615,7 @@ func getSubCategory(w http.ResponseWriter, r *http.Request) {
 		SELECT id, subcategory_id, title, content, created_at, updated_at
 		FROM articles
 		WHERE subcategory_id = $1
-		ORDER BY created_at DESC
+		ORDER BY id ASC
 	`, id)
 	if err == nil {
 		defer artRows.Close()
@@ -627,7 +627,7 @@ func getSubCategory(w http.ResponseWriter, r *http.Request) {
 					SELECT id, article_id, title, content, created_at, updated_at
 					FROM sub_articles
 					WHERE article_id = $1
-					ORDER BY created_at ASC
+					ORDER BY id ASC
 				`, a.ID)
 				if err == nil {
 					for subArtRows.Next() {
@@ -735,13 +735,13 @@ func getArticles(w http.ResponseWriter, r *http.Request) {
 			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
 			WHERE subcategory_id = $1
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`, subCategoryID)
 	} else {
 		rows, err = db.Query(`
 			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`)
 	}
 
@@ -789,7 +789,7 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 		SELECT id, article_id, title, content, created_at, updated_at
 		FROM sub_articles
 		WHERE article_id = $1
-		ORDER BY created_at ASC
+		ORDER BY id ASC
 	`, id)
 	if err == nil {
 		defer subArtRows.Close()
@@ -894,13 +894,13 @@ func getSubArticles(w http.ResponseWriter, r *http.Request) {
 			SELECT id, article_id, title, content, created_at, updated_at
 			FROM sub_articles
 			WHERE article_id = $1
-			ORDER BY created_at ASC
+			ORDER BY id ASC
 		`, articleID)
 	} else {
 		rows, err = db.Query(`
 			SELECT id, article_id, title, content, created_at, updated_at
 			FROM sub_articles
-			ORDER BY created_at ASC
+			ORDER BY id ASC
 		`)
 	}
 

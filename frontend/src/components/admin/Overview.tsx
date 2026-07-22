@@ -90,6 +90,7 @@ const Overview = () => {
     // Inspector draft form fields
     const [inspectorTitle, setInspectorTitle] = useState('');
     const [inspectorContent, setInspectorContent] = useState('');
+    const [selectedSaId, setSelectedSaId] = useState<number | null>(null);
 
     // Document settings (Subcategory details)
     const [subCatFormName, setSubCatFormName] = useState('');
@@ -135,9 +136,15 @@ const Overview = () => {
         if (selectedBlock) {
             setInspectorTitle(selectedBlock.data.title);
             setInspectorContent(selectedBlock.data.content);
+            if (selectedBlock.type === 'subarticle' && selectedBlock.id > 0) {
+                setSelectedSaId(selectedBlock.id);
+            } else if (selectedBlock.type === 'article') {
+                setSelectedSaId(null);
+            }
         } else {
             setInspectorTitle('');
             setInspectorContent('');
+            // Do not clear selectedSaId here so the view stays filtered on the sub-article after edit save/cancel
         }
     }, [selectedBlock]);
 
@@ -405,6 +412,11 @@ const Overview = () => {
             if (selectedBlock?.type === 'article' && selectedBlock.id === id) {
                 setSelectedBlock(null);
             }
+            // If the active sub-article belonged to the deleted article, reset view to Overview
+            const deletedArt = pageData?.articles?.find((art: any) => art.id === id);
+            if (deletedArt && selectedSaId && deletedArt.subarticles?.some((sa: any) => sa.id === selectedSaId)) {
+                setSelectedSaId(null);
+            }
             if (activeSubCategory) {
                 fetchPageData(activeSubCategory.id);
             }
@@ -420,6 +432,10 @@ const Overview = () => {
             await deleteSubArticle(token, id);
             if (selectedBlock?.type === 'subarticle' && selectedBlock.id === id) {
                 setSelectedBlock(null);
+            }
+            // Reset active selection to Overview if the deleted sub-article was currently active
+            if (selectedSaId === id) {
+                setSelectedSaId(null);
             }
             if (activeSubCategory) {
                 fetchPageData(activeSubCategory.id);
@@ -1298,6 +1314,13 @@ const Overview = () => {
                                             {/* Articles list */}
                                             {pageData?.articles && pageData.articles.length > 0 ? (
                                                 pageData.articles.map((article: any) => {
+                                                    const subsToShow = selectedSaId 
+                                                        ? article.subarticles?.filter((sa: any) => sa.id === selectedSaId)
+                                                        : [];
+                                                    
+                                                    // If a subarticle is selected but doesn't belong to this article, don't render this article
+                                                    if (selectedSaId && (!subsToShow || subsToShow.length === 0)) return null;
+
                                                     const isArticleActive = selectedBlock?.type === 'article' && selectedBlock.id === article.id;
                                                     
                                                     return (
@@ -1326,8 +1349,41 @@ const Overview = () => {
                                                             }}
                                                         >
                                                             {/* Action Bar (shows on hover / active) */}
+                                                            {/* Left toolbar (Article Block + Edit + Delete) */}
                                                             <div className="wp-block-toolbar" style={{ display: isArticleActive ? 'flex' : undefined }}>
-                                                                <span>Article Block</span>
+                                                                <span className="me-2" style={{ opacity: 0.85 }}>Article Block</span>
+                                                                <button 
+                                                                    className="wp-toolbar-btn" 
+                                                                    title="Edit Article"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedBlock({
+                                                                            type: 'article',
+                                                                            id: article.id,
+                                                                            data: {
+                                                                                title: article.title,
+                                                                                content: article.content
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-pencil-fill"></i> Edit
+                                                                </button>
+                                                                <button 
+                                                                    className="wp-toolbar-btn" 
+                                                                    title="Delete Block"
+                                                                    style={{ color: '#ff8a8a' }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteArticleFromEditor(article.id);
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-trash-fill"></i> Delete
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Right toolbar (Add Nested Sub-article) */}
+                                                            <div className="wp-block-toolbar" style={{ display: isArticleActive ? 'flex' : undefined, left: 'auto', right: '12px' }}>
                                                                 <button 
                                                                     className="wp-toolbar-btn" 
                                                                     title="Add Nested Sub-article"
@@ -1345,17 +1401,6 @@ const Overview = () => {
                                                                     }}
                                                                 >
                                                                     <i className="bi bi-plus-lg"></i> Add Sub-article
-                                                                </button>
-                                                                <button 
-                                                                    className="wp-toolbar-btn" 
-                                                                    title="Delete Block"
-                                                                    style={{ color: '#ff8a8a' }}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDeleteArticleFromEditor(article.id);
-                                                                    }}
-                                                                >
-                                                                    <i className="bi bi-trash-fill"></i>
                                                                 </button>
                                                             </div>
 
@@ -1400,46 +1445,51 @@ const Overview = () => {
                                                                 </form>
                                                             ) : (
                                                                 <>
-                                                                    <h2 className="title" style={{ fontSize: '2rem', fontWeight: 600, color: '#2c4964', marginBottom: '1.25rem' }}>{article.title}</h2>
-                                                                    <div className="content">
-                                                                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                                                                    </div>
+                                                                    <h2 className="title" style={{ fontSize: '2rem', fontWeight: 600, color: '#2c4964', marginBottom: selectedSaId ? '0' : '1.25rem' }}>{article.title}</h2>
+                                                                    {!selectedSaId && (
+                                                                        <div className="content">
+                                                                            <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                                                                        </div>
+                                                                    )}
                                                                 </>
                                                             )}
 
                                                             {/* Nested Subarticles Wrapper */}
-                                                            {((article.subarticles && article.subarticles.length > 0) || (selectedBlock && selectedBlock.type === 'subarticle' && selectedBlock.parentId === article.id)) && (
+                                                            {((selectedSaId && subsToShow && subsToShow.length > 0) || 
+                                                             (selectedBlock && selectedBlock.type === 'subarticle' && selectedBlock.parentId === article.id)) && (
                                                                 <div className="subarticles" style={{ 
-                                                                    marginTop: '2.5rem', 
+                                                                    marginTop: selectedSaId ? '0' : '2.5rem', 
                                                                     backgroundColor: '#f8f9fa',
                                                                     padding: '1.5rem',
                                                                     borderRadius: '8px'
                                                                 }}>
-                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                                                        <h4 style={{ fontWeight: 'bold', color: '#2c4964', margin: 0, fontSize: '1.1rem' }}>Sub-articles</h4>
-                                                                        <button 
-                                                                            className="btn btn-xs btn-outline-success"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setSelectedBlock({
-                                                                                    type: 'subarticle',
-                                                                                    id: 0,
-                                                                                    parentId: article.id,
-                                                                                    data: {
-                                                                                        title: 'New Sub-article Title',
-                                                                                        content: '<p>Enter sub-article content...</p>'
-                                                                                    }
-                                                                                });
-                                                                            }}
-                                                                            style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
-                                                                        >
-                                                                            <i className="bi bi-plus-lg"></i> Add Sub-article
-                                                                        </button>
-                                                                    </div>
+                                                                    {!selectedSaId && (
+                                                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                            <h4 style={{ fontWeight: 'bold', color: '#2c4964', margin: 0, fontSize: '1.1rem' }}>Sub-articles</h4>
+                                                                            <button 
+                                                                                className="btn btn-xs btn-outline-success"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSelectedBlock({
+                                                                                        type: 'subarticle',
+                                                                                        id: 0,
+                                                                                        parentId: article.id,
+                                                                                        data: {
+                                                                                            title: 'New Sub-article Title',
+                                                                                            content: '<p>Enter sub-article content...</p>'
+                                                                                        }
+                                                                                    });
+                                                                                }}
+                                                                                style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
+                                                                            >
+                                                                                <i className="bi bi-plus-lg"></i> Add Sub-article
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
 
                                                                     {/* Subarticles list */}
-                                                                    {article.subarticles && article.subarticles.length > 0 && (
-                                                                        article.subarticles.map((sa: any) => {
+                                                                    {subsToShow && subsToShow.length > 0 && (
+                                                                        subsToShow.map((sa: any) => {
                                                                             const isSubActive = selectedBlock?.type === 'subarticle' && selectedBlock.id === sa.id;
                                                                             
                                                                             return isSubActive ? (
@@ -1488,15 +1538,8 @@ const Overview = () => {
                                                                                     className={`wp-block-subarticle-wrapper ${isSubActive ? 'is-active' : ''}`}
                                                                                     onClick={(e) => {
                                                                                         e.stopPropagation();
-                                                                                        setSelectedBlock({
-                                                                                            type: 'subarticle',
-                                                                                            id: sa.id,
-                                                                                            parentId: article.id,
-                                                                                            data: {
-                                                                                                  title: sa.title,
-                                                                                                  content: sa.content
-                                                                                            }
-                                                                                        });
+                                                                                        setSelectedSaId(sa.id);
+                                                                                        setSelectedBlock(null);
                                                                                     }}
                                                                                     style={{ 
                                                                                         cursor: 'pointer',
@@ -1504,14 +1547,32 @@ const Overview = () => {
                                                                                         marginBottom: '1rem',
                                                                                         borderRadius: '6px',
                                                                                         backgroundColor: '#fff',
-                                                                                        border: '2px solid transparent',
+                                                                                        border: isSubActive ? '2px solid #46b450' : '2px solid transparent',
                                                                                         boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                                                                                         position: 'relative'
                                                                                     }}
                                                                                 >
                                                                                     {/* Actions toolbar */}
-                                                                                    <div className="wp-block-toolbar">
+                                                                                    <div className="wp-block-toolbar" style={{ display: isSubActive ? 'flex' : undefined }}>
                                                                                         <span>Sub-article Block</span>
+                                                                                        <button 
+                                                                                            className="wp-toolbar-btn" 
+                                                                                            title="Edit Sub-article"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                setSelectedBlock({
+                                                                                                    type: 'subarticle',
+                                                                                                    id: sa.id,
+                                                                                                    parentId: article.id,
+                                                                                                    data: {
+                                                                                                        title: sa.title,
+                                                                                                        content: sa.content
+                                                                                                    }
+                                                                                                });
+                                                                                            }}
+                                                                                        >
+                                                                                            <i className="bi bi-pencil-fill"></i> Edit
+                                                                                        </button>
                                                                                         <button 
                                                                                             className="wp-toolbar-btn" 
                                                                                             title="Delete Sub-article"
@@ -1664,10 +1725,14 @@ const Overview = () => {
                                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                                     <li style={{ marginBottom: '0.75rem' }}>
                                                         <span 
+                                                            onClick={() => {
+                                                                setSelectedBlock(null);
+                                                                setSelectedSaId(null);
+                                                            }}
                                                             style={{ 
-                                                                cursor: 'default', 
-                                                                color: '#1977cc',
-                                                                fontWeight: 'bold',
+                                                                cursor: 'pointer', 
+                                                                color: selectedSaId === null ? '#1977cc' : '#2c4964',
+                                                                fontWeight: selectedSaId === null ? 'bold' : 'normal',
                                                                 display: 'block'
                                                             }}
                                                         >
@@ -1678,9 +1743,14 @@ const Overview = () => {
                                                     {pageData?.articles?.flatMap((art: any) => art.subarticles || []).map((sa: any) => (
                                                         <li key={sa.id} style={{ marginBottom: '0.75rem' }}>
                                                             <span 
+                                                                onClick={() => {
+                                                                    setSelectedSaId(sa.id);
+                                                                    setSelectedBlock(null);
+                                                                }}
                                                                 style={{ 
-                                                                    cursor: 'default', 
-                                                                    color: '#2c4964',
+                                                                    cursor: 'pointer', 
+                                                                    color: selectedSaId === sa.id ? '#1977cc' : '#2c4964',
+                                                                    fontWeight: selectedSaId === sa.id ? 'bold' : 'normal',
                                                                     display: 'block'
                                                                 }}
                                                             >
