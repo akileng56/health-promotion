@@ -45,8 +45,6 @@ interface Article {
     subcategory_id: number;
     title: string;
     content: string;
-    image_url?: string;
-    video_url?: string;
     subarticles?: SubArticle[];
 }
 
@@ -55,8 +53,6 @@ interface SubArticle {
     article_id: number;
     title: string;
     content: string;
-    image_url?: string;
-    video_url?: string;
 }
 
 const Overview = () => {
@@ -88,19 +84,12 @@ const Overview = () => {
         data: {
             title: string;
             content: string;
-            image_url: string;
-            video_url: string;
         }
     } | null>(null);
-
-    // Image Upload State
-    const [imageUploading, setImageUploading] = useState(false);
 
     // Inspector draft form fields
     const [inspectorTitle, setInspectorTitle] = useState('');
     const [inspectorContent, setInspectorContent] = useState('');
-    const [inspectorImageUrl, setInspectorImageUrl] = useState('');
-    const [inspectorVideoUrl, setInspectorVideoUrl] = useState('');
 
     // Document settings (Subcategory details)
     const [subCatFormName, setSubCatFormName] = useState('');
@@ -146,13 +135,9 @@ const Overview = () => {
         if (selectedBlock) {
             setInspectorTitle(selectedBlock.data.title);
             setInspectorContent(selectedBlock.data.content);
-            setInspectorImageUrl(selectedBlock.data.image_url);
-            setInspectorVideoUrl(selectedBlock.data.video_url);
         } else {
             setInspectorTitle('');
             setInspectorContent('');
-            setInspectorImageUrl('');
-            setInspectorVideoUrl('');
         }
     }, [selectedBlock]);
 
@@ -375,21 +360,6 @@ const Overview = () => {
     };
 
     // --- Block Layout Editor Handlers ---
-    const handleInspectorImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && token) {
-            setImageUploading(true);
-            setError(null);
-            try {
-                const data = await uploadImage(token, file);
-                setInspectorImageUrl(data.image_url);
-            } catch (err: any) {
-                setError("Image upload failed: " + err.message);
-            } finally {
-                setImageUploading(false);
-            }
-        }
-    };
 
     const handleSaveInspectorBlock = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -400,9 +370,7 @@ const Overview = () => {
                 const articleData = {
                     subcategory_id: activeSubCategory.id,
                     title: inspectorTitle,
-                    content: inspectorContent,
-                    image_url: inspectorImageUrl,
-                    video_url: inspectorVideoUrl
+                    content: inspectorContent
                 };
                 if (selectedBlock.id > 0) {
                     await updateArticle(token, selectedBlock.id, articleData);
@@ -413,9 +381,7 @@ const Overview = () => {
                 const subArticleData = {
                     article_id: selectedBlock.parentId!,
                     title: inspectorTitle,
-                    content: inspectorContent,
-                    image_url: inspectorImageUrl,
-                    video_url: inspectorVideoUrl
+                    content: inspectorContent
                 };
                 if (selectedBlock.id > 0) {
                     await updateSubArticle(token, selectedBlock.id, subArticleData);
@@ -1303,9 +1269,7 @@ const Overview = () => {
                                                 id: 0,
                                                 data: {
                                                     title: 'New Article Title',
-                                                    content: '<p>Enter article content here...</p>',
-                                                    image_url: '',
-                                                    video_url: ''
+                                                    content: '<p>Enter article content here...</p>'
                                                 }
                                             });
                                         }}
@@ -1354,9 +1318,7 @@ const Overview = () => {
                                                                         id: article.id,
                                                                         data: {
                                                                             title: article.title,
-                                                                            content: article.content,
-                                                                            image_url: article.image_url || '',
-                                                                            video_url: article.video_url || ''
+                                                                            content: article.content
                                                                         }
                                                                     });
                                                                 }}
@@ -1375,9 +1337,7 @@ const Overview = () => {
                                                                                 id: article.id,
                                                                                 data: {
                                                                                     title: article.title,
-                                                                                    content: article.content,
-                                                                                    image_url: article.image_url || '',
-                                                                                    video_url: article.video_url || ''
+                                                                                    content: article.content
                                                                                 }
                                                                             });
                                                                         }}
@@ -1395,9 +1355,7 @@ const Overview = () => {
                                                                                 parentId: article.id,
                                                                                 data: {
                                                                                     title: 'New Sub-article Title',
-                                                                                    content: '<p>Enter sub-article content...</p>',
-                                                                                    image_url: '',
-                                                                                    video_url: ''
+                                                                                    content: '<p>Enter sub-article content...</p>'
                                                                                 }
                                                                             });
                                                                         }}
@@ -1421,25 +1379,7 @@ const Overview = () => {
                                                                 <h2 className="title fw-bold mb-3 text-dark">{article.title}</h2>
                                                                 
                                                                 <div className="content">
-                                                                    {article.image_url && (
-                                                                        <div className="mb-3 rounded overflow-hidden" style={{ maxHeight: '350px' }}>
-                                                                            <img src={`${SERVER_BASE_URL}${article.image_url}`} alt={article.title} className="content-image-style" style={{ objectFit: 'cover' }} />
-                                                                        </div>
-                                                                    )}
-                                                                    
                                                                     <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                                                                    
-                                                                    {article.video_url && getYouTubeEmbedUrl(article.video_url) && (
-                                                                        <div className="mt-3 rounded overflow-hidden" style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
-                                                                            <iframe 
-                                                                                src={getYouTubeEmbedUrl(article.video_url)!}
-                                                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                                                allowFullScreen
-                                                                                title="YouTube video player"
-                                                                            ></iframe>
-                                                                        </div>
-                                                                    )}
                                                                 </div>
 
                                                                 {/* Visual Nested Subarticles */}
@@ -1456,9 +1396,7 @@ const Overview = () => {
                                                                                     parentId: article.id,
                                                                                     data: {
                                                                                         title: 'New Sub-article Title',
-                                                                                        content: '<p>Enter sub-article content...</p>',
-                                                                                        image_url: '',
-                                                                                        video_url: ''
+                                                                                        content: '<p>Enter sub-article content...</p>'
                                                                                     }
                                                                                 });
                                                                             }}
@@ -1484,9 +1422,7 @@ const Overview = () => {
                                                                                             parentId: article.id,
                                                                                             data: {
                                                                                                   title: sa.title,
-                                                                                                  content: sa.content,
-                                                                                                  image_url: sa.image_url || '',
-                                                                                                  video_url: sa.video_url || ''
+                                                                                                  content: sa.content
                                                                                             }
                                                                                         });
                                                                                     }}
@@ -1506,9 +1442,7 @@ const Overview = () => {
                                                                                                     parentId: article.id,
                                                                                                     data: {
                                                                                                         title: sa.title,
-                                                                                                        content: sa.content,
-                                                                                                        image_url: sa.image_url || '',
-                                                                                                        video_url: sa.video_url || ''
+                                                                                                        content: sa.content
                                                                                                     }
                                                                                                 });
                                                                                             }}
@@ -1531,25 +1465,7 @@ const Overview = () => {
                                                                                     <h4 className="fw-bold mb-2 text-success" style={{ fontSize: '1rem' }}>{sa.title}</h4>
                                                                                     
                                                                                     <div className="content small">
-                                                                                        {sa.image_url && (
-                                                                                            <div className="mb-2 rounded overflow-hidden" style={{ maxHeight: '200px', maxWidth: '300px' }}>
-                                                                                                <img src={`${SERVER_BASE_URL}${sa.image_url}`} alt={sa.title} className="content-image-style" />
-                                                                                            </div>
-                                                                                        )}
-                                                                                        
                                                                                         <div dangerouslySetInnerHTML={{ __html: sa.content }} />
-                                                                                        
-                                                                                        {sa.video_url && getYouTubeEmbedUrl(sa.video_url) && (
-                                                                                            <div className="mt-2 rounded overflow-hidden" style={{ position: 'relative', paddingTop: '56.25%', background: '#000', maxWidth: '400px' }}>
-                                                                                                <iframe 
-                                                                                                    src={getYouTubeEmbedUrl(sa.video_url)!}
-                                                                                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                                                                    allowFullScreen
-                                                                                                    title="YouTube video player"
-                                                                                                ></iframe>
-                                                                                            </div>
-                                                                                        )}
                                                                                     </div>
                                                                                 </div>
                                                                             );
@@ -1608,9 +1524,7 @@ const Overview = () => {
                                                                             id: art.id,
                                                                             data: {
                                                                                 title: art.title,
-                                                                                content: art.content,
-                                                                                image_url: art.image_url || '',
-                                                                                video_url: art.video_url || ''
+                                                                                content: art.content
                                                                             }
                                                                         });
                                                                     }}
@@ -1631,9 +1545,7 @@ const Overview = () => {
                                                                                             parentId: art.id,
                                                                                             data: {
                                                                                                 title: sa.title,
-                                                                                                content: sa.content,
-                                                                                                image_url: sa.image_url || '',
-                                                                                                video_url: sa.video_url || ''
+                                                                                                content: sa.content
                                                                                             }
                                                                                         });
                                                                                     }}
@@ -1699,66 +1611,7 @@ const Overview = () => {
                                             />
                                         </div>
 
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">Featured Image (Optional)</label>
-                                            {inspectorImageUrl ? (
-                                                <div className="wp-image-preview-box">
-                                                    <img 
-                                                        src={`${SERVER_BASE_URL}${inspectorImageUrl}`} 
-                                                        alt="Preview" 
-                                                        className="wp-image-preview-thumbnail" 
-                                                    />
-                                                    <button 
-                                                        type="button" 
-                                                        className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
-                                                        onClick={() => setInspectorImageUrl('')}
-                                                        title="Remove Image"
-                                                        style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
-                                                    >
-                                                        <i className="bi bi-x-lg"></i>
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="wp-image-preview-box text-muted py-3">
-                                                    {imageUploading ? (
-                                                        <div className="small">
-                                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                            Uploading Image...
-                                                        </div>
-                                                    ) : (
-                                                        <div>
-                                                            <i className="bi bi-image d-block mb-1 text-secondary fs-4"></i>
-                                                            <span className="small d-block mb-2 text-muted" style={{ fontSize: '0.75rem' }}>PNG, JPG or GIF</span>
-                                                            <input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                id="inspector-image-file" 
-                                                                style={{ display: 'none' }}
-                                                                onChange={handleInspectorImageUpload}
-                                                            />
-                                                            <label 
-                                                                htmlFor="inspector-image-file" 
-                                                                className="btn btn-xs btn-outline-primary m-0"
-                                                                style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
-                                                            >
-                                                                Upload Image
-                                                            </label>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
 
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">YouTube Video Link (Optional)</label>
-                                            <input 
-                                                type="url" 
-                                                className="wp-form-input" 
-                                                placeholder="https://www.youtube.com/watch?v=..." 
-                                                value={inspectorVideoUrl} 
-                                                onChange={(e) => setInspectorVideoUrl(e.target.value)} 
-                                            />
-                                        </div>
 
                                         <div className="wp-form-group">
                                             <label className="wp-form-label">Block Content</label>
