@@ -1232,16 +1232,16 @@ const Overview = () => {
                     </div>
                 )}
 
-                {/* --- 3. GUTEBURGER VISUAL LAYOUT EDITOR VIEW --- */}
+                {/* --- 3. INLINE VISUAL LAYOUT EDITOR VIEW --- */}
                 {activeTab === 'editor' && activeSubCategory && (
-                    <div className="wp-editor-workspace">
+                    <div className="editor-layout-view">
                         
-                        {/* LEFT PAGE WORKSPACE (Gutenberg layout builder canvas) */}
-                        <div className="wp-editor-canvas">
-                            <div className="wp-editor-header">
-                                <div className="d-flex align-items-center gap-3">
+                        {/* Page Header (Matching Details.tsx style) */}
+                        <div className="page-title light-background" style={{ padding: '20px 0', borderBottom: '1px solid #eee', marginBottom: '20px' }}>
+                            <div className="container d-flex justify-content-between align-items-center">
+                                <div>
                                     <button 
-                                        className="btn btn-sm btn-outline-secondary" 
+                                        className="btn btn-sm btn-outline-secondary me-3" 
                                         onClick={() => {
                                             setActiveTab('subcategories');
                                             setSelectedBlock(null);
@@ -1250,19 +1250,21 @@ const Overview = () => {
                                     >
                                         <i className="bi bi-arrow-left"></i> Back
                                     </button>
-                                    <h4 className="wp-editor-title">{activeSubCategory.name}</h4>
+                                    <span style={{ fontSize: '1.8rem', fontWeight: 600, color: '#2c4964', verticalAlign: 'middle' }}>
+                                        {activeSubCategory.name}
+                                    </span>
                                 </div>
                                 <div className="d-flex gap-2">
                                     <button 
-                                        className="wp-btn-secondary btn-sm"
+                                        className="btn btn-outline-primary btn-sm"
                                         onClick={() => {
-                                            setSelectedBlock(null);
+                                            openSubCategoryModal(activeSubCategory);
                                         }}
                                     >
-                                        <i className="bi bi-gear-fill me-1"></i> Document Settings
+                                        <i className="bi bi-gear-fill me-1"></i> Page Settings
                                     </button>
                                     <button 
-                                        className="wp-btn-primary btn-sm"
+                                        className="btn btn-primary btn-sm"
                                         onClick={() => {
                                             setSelectedBlock({
                                                 type: 'article',
@@ -1274,120 +1276,149 @@ const Overview = () => {
                                             });
                                         }}
                                     >
-                                        <i className="bi bi-plus-lg me-1"></i> Add Article Block
+                                        <i className="bi bi-plus-lg me-1"></i> Add Article
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="wp-editor-body bg-light">
-                                {pageLoading ? (
-                                    <div className="text-center py-5">
-                                        <span className="spinner-border text-primary" role="status"></span>
-                                        <p className="mt-2 text-muted small">Loading page editor canvas...</p>
-                                    </div>
-                                ) : (
-                                    <div className="row">
-                                        {/* Main Preview Container */}
-                                        <div className="col-lg-8">
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                                
-                                                {/* Page Banner Title */}
-                                                <div className="p-4 bg-white border rounded shadow-sm">
-                                                    <span className="text-secondary small">Disease Page Layout</span>
-                                                    <h1 className="fw-bold m-0 text-dark" style={{ borderBottom: '2px solid #1977cc', paddingBottom: '0.5rem' }}>
-                                                        {activeSubCategory.name}
-                                                    </h1>
-                                                    <p className="text-muted mt-2 small mb-0">
-                                                        {pageData?.description || "Configure descriptions and page outline inside Document Settings."}
-                                                    </p>
-                                                </div>
+                        {/* Page Content Container */}
+                        <div className="container py-4">
+                            {pageLoading ? (
+                                <div className="text-center py-5">
+                                    <span className="spinner-border text-primary" role="status"></span>
+                                    <p className="mt-2 text-muted small">Loading page editor canvas...</p>
+                                </div>
+                            ) : (
+                                <div className="row">
+                                    {/* Main Content Area (col-lg-8) */}
+                                    <div className="col-lg-8">
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                            
+                                            {/* Articles list */}
+                                            {pageData?.articles && pageData.articles.length > 0 ? (
+                                                pageData.articles.map((article: any) => {
+                                                    const isArticleActive = selectedBlock?.type === 'article' && selectedBlock.id === article.id;
+                                                    
+                                                    return (
+                                                        <div 
+                                                            key={article.id} 
+                                                            className={`article wp-block-wrapper ${isArticleActive ? 'is-active' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedBlock({
+                                                                    type: 'article',
+                                                                    id: article.id,
+                                                                    data: {
+                                                                        title: article.title,
+                                                                        content: article.content
+                                                                    }
+                                                                });
+                                                            }}
+                                                            style={{
+                                                                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                borderRadius: '8px',
+                                                                backgroundColor: '#fff',
+                                                                padding: '2rem',
+                                                                border: isArticleActive ? '2px solid #1977cc' : '2px solid transparent',
+                                                                cursor: 'pointer',
+                                                                position: 'relative'
+                                                            }}
+                                                        >
+                                                            {/* Action Bar (shows on hover / active) */}
+                                                            <div className="wp-block-toolbar" style={{ display: isArticleActive ? 'flex' : undefined }}>
+                                                                <span>Article Block</span>
+                                                                <button 
+                                                                    className="wp-toolbar-btn" 
+                                                                    title="Add Nested Sub-article"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedBlock({
+                                                                            type: 'subarticle',
+                                                                            id: 0,
+                                                                            parentId: article.id,
+                                                                            data: {
+                                                                                title: 'New Sub-article Title',
+                                                                                content: '<p>Enter sub-article content...</p>'
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-plus-lg"></i> Add Sub-article
+                                                                </button>
+                                                                <button 
+                                                                    className="wp-toolbar-btn" 
+                                                                    title="Delete Block"
+                                                                    style={{ color: '#ff8a8a' }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteArticleFromEditor(article.id);
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-trash-fill"></i>
+                                                                </button>
+                                                            </div>
 
-                                                {/* Articles mapping */}
-                                                {pageData?.articles && pageData.articles.length > 0 ? (
-                                                    pageData.articles.map((article: any) => {
-                                                        const isArticleActive = selectedBlock?.type === 'article' && selectedBlock.id === article.id;
-                                                        
-                                                        return (
-                                                            <div 
-                                                                key={article.id} 
-                                                                className={`wp-block-wrapper ${isArticleActive ? 'is-active' : ''}`}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedBlock({
-                                                                        type: 'article',
-                                                                        id: article.id,
-                                                                        data: {
-                                                                            title: article.title,
-                                                                            content: article.content
-                                                                        }
-                                                                    });
-                                                                }}
-                                                                style={{ cursor: 'pointer' }}
-                                                            >
-                                                                {/* Gutenberg Action Bar */}
-                                                                <div className="wp-block-toolbar">
-                                                                    <span>Article Block</span>
-                                                                    <button 
-                                                                        className="wp-toolbar-btn" 
-                                                                        title="Edit Block Settings"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setSelectedBlock({
-                                                                                type: 'article',
-                                                                                id: article.id,
-                                                                                data: {
-                                                                                    title: article.title,
-                                                                                    content: article.content
-                                                                                }
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-pencil-fill"></i>
-                                                                    </button>
-                                                                    <button 
-                                                                        className="wp-toolbar-btn" 
-                                                                        title="Add Nested Sub-article"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setSelectedBlock({
-                                                                                type: 'subarticle',
-                                                                                id: 0,
-                                                                                parentId: article.id,
-                                                                                data: {
-                                                                                    title: 'New Sub-article Title',
-                                                                                    content: '<p>Enter sub-article content...</p>'
-                                                                                }
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-plus-lg"></i> Add Sub-article
-                                                                    </button>
-                                                                    <button 
-                                                                        className="wp-toolbar-btn" 
-                                                                        title="Delete Block"
-                                                                        style={{ color: '#ff8a8a' }}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleDeleteArticleFromEditor(article.id);
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-trash-fill"></i>
-                                                                    </button>
-                                                                </div>
-
-                                                                {/* Visual Preview */}
-                                                                <h2 className="title fw-bold mb-3 text-dark">{article.title}</h2>
-                                                                
-                                                                <div className="content">
-                                                                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                                                                </div>
-
-                                                                {/* Visual Nested Subarticles */}
-                                                                <div className="mt-4 border-top pt-3 bg-light p-3 rounded">
-                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                        <span className="small text-secondary fw-bold">Sub-Articles Layout</span>
+                                                            {/* Inline Editor or Display */}
+                                                            {isArticleActive ? (
+                                                                <form onSubmit={handleSaveInspectorBlock} onClick={(e) => e.stopPropagation()} className="p-1">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label small fw-bold text-secondary">Article Title</label>
+                                                                        <input 
+                                                                            type="text" 
+                                                                            className="form-control fw-bold" 
+                                                                            style={{ fontSize: '1.25rem', color: '#2c4964' }}
+                                                                            value={inspectorTitle} 
+                                                                            onChange={(e) => setInspectorTitle(e.target.value)} 
+                                                                            required 
+                                                                        />
+                                                                    </div>
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label small fw-bold text-secondary">Article Content</label>
+                                                                        <ReactQuill 
+                                                                            ref={quillRef}
+                                                                            theme="snow"
+                                                                            value={inspectorContent} 
+                                                                            onChange={setInspectorContent}
+                                                                            onBlur={(range: any, source: any, editor: any) => setLastRange(range)}
+                                                                            modules={quillModules}
+                                                                            style={{ backgroundColor: 'white' }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="d-flex gap-2">
+                                                                        <button type="submit" className="btn btn-sm btn-primary">
+                                                                            <i className="bi bi-check-circle me-1"></i> Save Changes
+                                                                        </button>
                                                                         <button 
-                                                                            className="btn btn-xs btn-outline-success py-0 px-2 small"
+                                                                            type="button" 
+                                                                            className="btn btn-sm btn-outline-secondary"
+                                                                            onClick={() => setSelectedBlock(null)}
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                </form>
+                                                            ) : (
+                                                                <>
+                                                                    <h2 className="title" style={{ fontSize: '2rem', fontWeight: 600, color: '#2c4964', marginBottom: '1.25rem' }}>{article.title}</h2>
+                                                                    <div className="content">
+                                                                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                                                                    </div>
+                                                                </>
+                                                            )}
+
+                                                            {/* Nested Subarticles Wrapper */}
+                                                            {((article.subarticles && article.subarticles.length > 0) || (selectedBlock && selectedBlock.type === 'subarticle' && selectedBlock.parentId === article.id)) && (
+                                                                <div className="subarticles" style={{ 
+                                                                    marginTop: '2.5rem', 
+                                                                    backgroundColor: '#f8f9fa',
+                                                                    padding: '1.5rem',
+                                                                    borderRadius: '8px'
+                                                                }}>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h4 style={{ fontWeight: 'bold', color: '#2c4964', margin: 0, fontSize: '1.1rem' }}>Sub-articles</h4>
+                                                                        <button 
+                                                                            className="btn btn-xs btn-outline-success"
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 setSelectedBlock({
@@ -1400,17 +1431,58 @@ const Overview = () => {
                                                                                     }
                                                                                 });
                                                                             }}
-                                                                            style={{ fontSize: '0.75rem' }}
+                                                                            style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
                                                                         >
                                                                             <i className="bi bi-plus-lg"></i> Add Sub-article
                                                                         </button>
                                                                     </div>
 
-                                                                    {article.subarticles && article.subarticles.length > 0 ? (
+                                                                    {/* Subarticles list */}
+                                                                    {article.subarticles && article.subarticles.length > 0 && (
                                                                         article.subarticles.map((sa: any) => {
                                                                             const isSubActive = selectedBlock?.type === 'subarticle' && selectedBlock.id === sa.id;
                                                                             
-                                                                            return (
+                                                                            return isSubActive ? (
+                                                                                <div key={sa.id} className="p-3 mb-3 bg-white border rounded shadow-sm" onClick={(e) => e.stopPropagation()}>
+                                                                                    <h5 className="text-success fw-bold mb-3">Edit Sub-article</h5>
+                                                                                    <form onSubmit={handleSaveInspectorBlock}>
+                                                                                        <div className="mb-3">
+                                                                                            <label className="form-label small fw-bold text-secondary">Sub-article Title</label>
+                                                                                            <input 
+                                                                                                type="text" 
+                                                                                                className="form-control fw-bold" 
+                                                                                                value={inspectorTitle} 
+                                                                                                onChange={(e) => setInspectorTitle(e.target.value)} 
+                                                                                                required 
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="mb-3">
+                                                                                            <label className="form-label small fw-bold text-secondary">Sub-article Content</label>
+                                                                                            <ReactQuill 
+                                                                                                ref={quillRef}
+                                                                                                theme="snow"
+                                                                                                value={inspectorContent} 
+                                                                                                onChange={setInspectorContent}
+                                                                                                onBlur={(range: any, source: any, editor: any) => setLastRange(range)}
+                                                                                                modules={quillModules}
+                                                                                                style={{ backgroundColor: 'white' }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="d-flex gap-2">
+                                                                                            <button type="submit" className="btn btn-sm btn-success">
+                                                                                                <i className="bi bi-check-circle me-1"></i> Save Changes
+                                                                                            </button>
+                                                                                            <button 
+                                                                                                type="button" 
+                                                                                                className="btn btn-sm btn-outline-secondary"
+                                                                                                onClick={() => setSelectedBlock(null)}
+                                                                                            >
+                                                                                                Cancel
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </form>
+                                                                                </div>
+                                                                            ) : (
                                                                                 <div 
                                                                                     key={sa.id}
                                                                                     className={`wp-block-subarticle-wrapper ${isSubActive ? 'is-active' : ''}`}
@@ -1426,29 +1498,20 @@ const Overview = () => {
                                                                                             }
                                                                                         });
                                                                                     }}
-                                                                                    style={{ cursor: 'pointer' }}
+                                                                                    style={{ 
+                                                                                        cursor: 'pointer',
+                                                                                        padding: '1.5rem',
+                                                                                        marginBottom: '1rem',
+                                                                                        borderRadius: '6px',
+                                                                                        backgroundColor: '#fff',
+                                                                                        border: '2px solid transparent',
+                                                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                                                                        position: 'relative'
+                                                                                    }}
                                                                                 >
-                                                                                    {/* Sub-article Actions */}
+                                                                                    {/* Actions toolbar */}
                                                                                     <div className="wp-block-toolbar">
                                                                                         <span>Sub-article Block</span>
-                                                                                        <button 
-                                                                                            className="wp-toolbar-btn" 
-                                                                                            title="Edit Settings"
-                                                                                            onClick={(e) => {
-                                                                                                e.stopPropagation();
-                                                                                                setSelectedBlock({
-                                                                                                    type: 'subarticle',
-                                                                                                    id: sa.id,
-                                                                                                    parentId: article.id,
-                                                                                                    data: {
-                                                                                                        title: sa.title,
-                                                                                                        content: sa.content
-                                                                                                    }
-                                                                                                });
-                                                                                            }}
-                                                                                        >
-                                                                                            <i className="bi bi-pencil-fill"></i>
-                                                                                        </button>
                                                                                         <button 
                                                                                             className="wp-toolbar-btn" 
                                                                                             title="Delete Sub-article"
@@ -1462,223 +1525,176 @@ const Overview = () => {
                                                                                         </button>
                                                                                     </div>
 
-                                                                                    <h4 className="fw-bold mb-2 text-success" style={{ fontSize: '1rem' }}>{sa.title}</h4>
-                                                                                    
-                                                                                    <div className="content small">
-                                                                                        <div dangerouslySetInnerHTML={{ __html: sa.content }} />
-                                                                                    </div>
+                                                                                    <h4 style={{ fontWeight: 'bold', color: '#1977cc', fontSize: '1.1rem', marginBottom: '0.75rem' }}>{sa.title}</h4>
+                                                                                    <div style={{ fontSize: '1rem' }} dangerouslySetInnerHTML={{ __html: sa.content }} />
                                                                                 </div>
                                                                             );
                                                                         })
-                                                                    ) : (
-                                                                        <div className="text-center py-2 text-muted small bg-white border border-dashed rounded">
-                                                                            No sub-articles. Click "Add Sub-article" above to create nested blocks.
+                                                                    )}
+
+                                                                    {/* Add New Sub-article inline form */}
+                                                                    {selectedBlock && selectedBlock.type === 'subarticle' && selectedBlock.id === 0 && selectedBlock.parentId === article.id && (
+                                                                        <div className="p-3 mb-3 bg-white border rounded shadow-sm" onClick={(e) => e.stopPropagation()}>
+                                                                            <h5 className="text-success fw-bold mb-3">Add New Sub-article</h5>
+                                                                            <form onSubmit={handleSaveInspectorBlock}>
+                                                                                <div className="mb-3">
+                                                                                    <label className="form-label small fw-bold text-secondary">Sub-article Title</label>
+                                                                                    <input 
+                                                                                        type="text" 
+                                                                                        className="form-control fw-bold" 
+                                                                                        value={inspectorTitle} 
+                                                                                        onChange={(e) => setInspectorTitle(e.target.value)} 
+                                                                                        required 
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="mb-3">
+                                                                                    <label className="form-label small fw-bold text-secondary">Sub-article Content</label>
+                                                                                    <ReactQuill 
+                                                                                        ref={quillRef}
+                                                                                        theme="snow"
+                                                                                        value={inspectorContent} 
+                                                                                        onChange={setInspectorContent}
+                                                                                        onBlur={(range: any, source: any, editor: any) => setLastRange(range)}
+                                                                                        modules={quillModules}
+                                                                                        style={{ backgroundColor: 'white' }}
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="d-flex gap-2">
+                                                                                    <button type="submit" className="btn btn-sm btn-success">
+                                                                                        <i className="bi bi-plus-circle me-1"></i> Add Sub-article
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        className="btn btn-sm btn-outline-secondary"
+                                                                                        onClick={() => setSelectedBlock(null)}
+                                                                                    >
+                                                                                        Cancel
+                                                                                    </button>
+                                                                                </div>
+                                                                            </form>
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="p-5 text-center text-muted bg-white border border-dashed rounded">
-                                                        <i className="bi bi-plus-circle display-4 mb-2 text-secondary"></i>
-                                                        <h5>No article blocks created</h5>
-                                                        <p className="small mb-3">Begin by inserting a structured article block into the layout.</p>
-                                                        <button 
-                                                            className="wp-btn-primary"
-                                                            onClick={() => {
-                                                                setSelectedBlock({
-                                                                    type: 'article',
-                                                                    id: 0,
-                                                                    data: {
-                                                                        title: 'New Article Title',
-                                                                        content: '<p>Enter article content here...</p>',
-                                                                        image_url: '',
-                                                                        video_url: ''
-                                                                    }
-                                                                });
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="p-5 text-center text-muted bg-white border border-dashed rounded shadow-sm">
+                                                    <i className="bi bi-plus-circle display-4 mb-2 text-secondary"></i>
+                                                    <h5>No article blocks created</h5>
+                                                    <p className="small mb-3">Begin by inserting a structured article block into the layout.</p>
+                                                    <button 
+                                                        className="btn btn-primary"
+                                                        onClick={() => {
+                                                            setSelectedBlock({
+                                                                type: 'article',
+                                                                id: 0,
+                                                                data: {
+                                                                    title: 'New Article Title',
+                                                                    content: '<p>Enter article content here...</p>'
+                                                                }
+                                                            });
+                                                        }}
+                                                    >
+                                                        Add New Article
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Add New Article inline form at the bottom */}
+                                            {selectedBlock && selectedBlock.type === 'article' && selectedBlock.id === 0 && (
+                                                <div className="article wp-block-wrapper is-active" style={{ padding: '2rem', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', borderRadius: '8px', backgroundColor: '#fff', border: '2px solid #1977cc' }}>
+                                                    <h3 className="text-primary fw-bold mb-3">Add New Article</h3>
+                                                    <form onSubmit={handleSaveInspectorBlock} onClick={(e) => e.stopPropagation()}>
+                                                        <div className="mb-3">
+                                                            <label className="form-label small fw-bold text-secondary">Article Title</label>
+                                                            <input 
+                                                                type="text" 
+                                                                className="form-control fw-bold" 
+                                                                value={inspectorTitle} 
+                                                                onChange={(e) => setInspectorTitle(e.target.value)} 
+                                                                required 
+                                                            />
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label className="form-label small fw-bold text-secondary">Article Content</label>
+                                                            <ReactQuill 
+                                                                ref={quillRef}
+                                                                theme="snow"
+                                                                value={inspectorContent} 
+                                                                onChange={setInspectorContent}
+                                                                onBlur={(range: any, source: any, editor: any) => setLastRange(range)}
+                                                                modules={quillModules}
+                                                                style={{ backgroundColor: 'white' }}
+                                                            />
+                                                        </div>
+                                                        <div className="d-flex gap-2">
+                                                            <button type="submit" className="btn btn-sm btn-primary">
+                                                                <i className="bi bi-plus-circle me-1"></i> Add Article
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                className="btn btn-sm btn-outline-secondary"
+                                                                onClick={() => setSelectedBlock(null)}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Sidebar widgets container column (col-lg-4 sidebar) (Matching Details.tsx) */}
+                                    <div className="col-lg-4 sidebar">
+                                        <div className="widgets-container" style={{ position: 'sticky', top: '100px' }}>
+                                            <div className="recent-posts-widget widget-item" style={{ 
+                                                padding: '1.5rem', 
+                                                backgroundColor: '#fff', 
+                                                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                borderRadius: '8px',
+                                                marginBottom: '2rem'
+                                            }}>
+                                                <h3 className="widget-title" style={{ fontSize: '1.25rem', borderBottom: '2px solid #1977cc', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                                    {activeSubCategory.name}
+                                                </h3>
+                                                
+                                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                    <li style={{ marginBottom: '0.75rem' }}>
+                                                        <span 
+                                                            style={{ 
+                                                                cursor: 'default', 
+                                                                color: '#1977cc',
+                                                                fontWeight: 'bold',
+                                                                display: 'block'
                                                             }}
                                                         >
-                                                            Add New Article
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Right Sidebar Widgets Layout (Identical structure to Details.tsx) */}
-                                        <div className="col-lg-4">
-                                            <div className="p-3 bg-white border rounded shadow-sm" style={{ position: 'sticky', top: '100px' }}>
-                                                <h5 className="fw-bold text-dark border-bottom pb-2 mb-3">
-                                                    {activeSubCategory.name} Outline
-                                                </h5>
-                                                {pageData?.articles && pageData.articles.length > 0 ? (
-                                                    <ul className="list-unstyled m-0">
-                                                        {pageData.articles.map((art: any) => (
-                                                            <li key={art.id} className="mb-2">
-                                                                <span 
-                                                                    className="d-flex align-items-center gap-2 text-decoration-none text-primary cursor-pointer hover-underline small fw-bold"
-                                                                    onClick={() => {
-                                                                        setSelectedBlock({
-                                                                            type: 'article',
-                                                                            id: art.id,
-                                                                            data: {
-                                                                                title: art.title,
-                                                                                content: art.content
-                                                                            }
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <i className="bi bi-chevron-right small"></i>
-                                                                    {art.title}
-                                                                </span>
-                                                                {art.subarticles && art.subarticles.length > 0 && (
-                                                                    <ul className="list-unstyled ps-3 mt-1">
-                                                                        {art.subarticles.map((sa: any) => (
-                                                                            <li key={sa.id} className="mb-1">
-                                                                                <span 
-                                                                                    className="d-flex align-items-center gap-1 text-decoration-none text-success cursor-pointer hover-underline small"
-                                                                                    onClick={() => {
-                                                                                        setSelectedBlock({
-                                                                                            type: 'subarticle',
-                                                                                            id: sa.id,
-                                                                                            parentId: art.id,
-                                                                                            data: {
-                                                                                                title: sa.title,
-                                                                                                content: sa.content
-                                                                                            }
-                                                                                        });
-                                                                                    }}
-                                                                                >
-                                                                                    <i className="bi bi-dot"></i>
-                                                                                    {sa.title}
-                                                                                </span>
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                )}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                ) : (
-                                                    <span className="text-muted small">No structured pages outline available.</span>
-                                                )}
+                                                            <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem' }}></i>
+                                                            Overview
+                                                        </span>
+                                                    </li>
+                                                    {pageData?.articles?.flatMap((art: any) => art.subarticles || []).map((sa: any) => (
+                                                        <li key={sa.id} style={{ marginBottom: '0.75rem' }}>
+                                                            <span 
+                                                                style={{ 
+                                                                    cursor: 'default', 
+                                                                    color: '#2c4964',
+                                                                    display: 'block'
+                                                                }}
+                                                            >
+                                                                <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem' }}></i>
+                                                                {sa.title}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* RIGHT INSPECTOR (WordPress Settings Sidebar) */}
-                        <div className="wp-inspector">
-                            <div className="wp-inspector-header">
-                                <h5 className="wp-inspector-title">
-                                    {selectedBlock ? (
-                                        <>
-                                            <i className="bi bi-sliders text-primary"></i> 
-                                            {selectedBlock.type === 'article' ? 'Article Settings' : 'Sub-article Settings'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="bi bi-gear-fill text-secondary"></i>
-                                            Page Settings
-                                        </>
-                                    )}
-                                </h5>
-                                {selectedBlock && (
-                                    <button 
-                                        type="button" 
-                                        className="btn-close" 
-                                        onClick={() => setSelectedBlock(null)}
-                                        title="Deselect block"
-                                    ></button>
-                                )}
-                            </div>
-
-                            <div className="wp-inspector-body">
-                                {selectedBlock ? (
-                                    /* 1. Selected Block Inspector (Gutenberg Element Settings) */
-                                    <form onSubmit={handleSaveInspectorBlock}>
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">Block Title</label>
-                                            <input 
-                                                type="text" 
-                                                className="wp-form-input" 
-                                                value={inspectorTitle} 
-                                                onChange={(e) => setInspectorTitle(e.target.value)} 
-                                                required 
-                                            />
-                                        </div>
-
-
-
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">Block Content</label>
-                                            <ReactQuill 
-                                                ref={quillRef}
-                                                theme="snow"
-                                                value={inspectorContent} 
-                                                onChange={setInspectorContent}
-                                                onBlur={(range: any, source: any, editor: any) => setLastRange(range)}
-                                                modules={quillModules}
-                                                style={{ backgroundColor: 'white' }}
-                                            />
-                                        </div>
-
-                                        <div className="wp-inspector-footer border-0 p-0 mt-4 d-flex justify-content-between">
-                                            <button type="submit" className="wp-btn-primary flex-grow-1">
-                                                <i className="bi bi-check-circle me-1"></i> Save Changes
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                className="wp-btn-secondary"
-                                                onClick={() => setSelectedBlock(null)}
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    /* 2. Document Inspector (General Settings for activeSubCategory) */
-                                    <form onSubmit={handleSaveSubCategoryDetails}>
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">Subcategory Title</label>
-                                            <input 
-                                                type="text" 
-                                                className="wp-form-input" 
-                                                value={subCatFormName} 
-                                                onChange={(e) => setSubCatFormName(e.target.value)} 
-                                                required 
-                                            />
-                                        </div>
-
-                                        <div className="wp-form-group">
-                                            <label className="wp-form-label">Subcategory Description</label>
-                                            <textarea 
-                                                className="wp-form-input" 
-                                                rows={4}
-                                                value={subCatFormDescription} 
-                                                onChange={(e) => setSubCatFormDescription(e.target.value)} 
-                                            />
-                                        </div>
-
-                                        <button type="submit" className="wp-btn-primary w-100 mb-4">
-                                            <i className="bi bi-cloud-arrow-up-fill me-1"></i> Save Page Settings
-                                        </button>
-
-                                        <div className="border-top pt-3">
-                                            <h6 className="fw-bold mb-2 text-dark" style={{ fontSize: '0.85rem' }}>Tips & Help</h6>
-                                            <ul className="text-muted ps-3 small m-0" style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
-                                                <li className="mb-1">Hover over any block on the left layout to edit or delete it.</li>
-                                                <li className="mb-1">Click "Add Article Block" to insert a top-level section.</li>
-                                                <li className="mb-1">Click "Add Sub-article" to nest subsections within any article.</li>
-                                                <li className="mb-1">Videos will load directly via standard YouTube links.</li>
-                                            </ul>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
