@@ -816,6 +816,14 @@ func createArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure that a subcategory has only one Article
+	var count int
+	dbErr := db.QueryRow("SELECT COUNT(*) FROM articles WHERE subcategory_id = $1", req.SubCategoryID).Scan(&count)
+	if dbErr == nil && count > 0 {
+		writeError(w, http.StatusBadRequest, "This subcategory already has an article layout. Only one article layout is permitted per subcategory.")
+		return
+	}
+
 	var a Article
 	err := db.QueryRow(`
 		INSERT INTO articles(subcategory_id, title, content)

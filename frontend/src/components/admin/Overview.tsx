@@ -1168,7 +1168,7 @@ const Overview = () => {
                                                 setActiveTab('subcategories');
                                             }}
                                         >
-                                            Manage Subcategories <i className="bi bi-arrow-right-short"></i>
+                                            Subcategories <i className="bi bi-arrow-right-short"></i>
                                         </button>
                                         <button className="wp-btn-secondary" onClick={() => openCategoryModal(c)} title="Edit">
                                             <i className="bi bi-pencil-fill"></i>
@@ -1226,7 +1226,7 @@ const Overview = () => {
                                                 setActiveTab('editor');
                                             }}
                                         >
-                                            <i className="bi bi-layout-text-sidebar-reverse me-1"></i> Design Page Layout
+                                            <i className="bi bi-layout-text-sidebar-reverse me-1"></i> Page Layout
                                         </button>
                                         <button className="wp-btn-secondary" onClick={() => openSubCategoryModal(sc)} title="Edit Details">
                                             <i className="bi bi-pencil-fill"></i>
@@ -1279,21 +1279,40 @@ const Overview = () => {
                                     >
                                         <i className="bi bi-gear-fill me-1"></i> Page Settings
                                     </button>
-                                    <button 
-                                        className="btn btn-primary btn-sm"
-                                        onClick={() => {
-                                            setSelectedBlock({
-                                                type: 'article',
-                                                id: 0,
-                                                data: {
-                                                    title: 'New Article Title',
-                                                    content: '<p>Enter article content here...</p>'
-                                                }
-                                            });
-                                        }}
-                                    >
-                                        <i className="bi bi-plus-lg me-1"></i> Add Article
-                                    </button>
+                                    {pageData?.articles && pageData.articles.length > 0 ? (
+                                        <button 
+                                            className="btn btn-success btn-sm"
+                                            onClick={() => {
+                                                setSelectedBlock({
+                                                    type: 'subarticle',
+                                                    id: 0,
+                                                    parentId: pageData.articles[0].id,
+                                                    data: {
+                                                        title: 'New Sub-article Title',
+                                                        content: '<p>Enter sub-article content...</p>'
+                                                    }
+                                                });
+                                            }}
+                                        >
+                                            <i className="bi bi-plus-lg me-1"></i> Add Sub-article
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            className="btn btn-primary btn-sm"
+                                            onClick={() => {
+                                                setSelectedBlock({
+                                                    type: 'article',
+                                                    id: 0,
+                                                    data: {
+                                                        title: 'New Article Title',
+                                                        content: '<p>Enter article content here...</p>'
+                                                    }
+                                                });
+                                            }}
+                                        >
+                                            <i className="bi bi-plus-lg me-1"></i> Add Article
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
