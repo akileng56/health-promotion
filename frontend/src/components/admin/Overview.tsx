@@ -102,6 +102,27 @@ const Overview = () => {
     const [modalName, setModalName] = useState('');
     const [modalDescription, setModalDescription] = useState('');
 
+    // Carbon Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        label?: string;
+        danger?: boolean;
+        confirmText?: string;
+        cancelText?: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {}
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
     const quillRef = useRef<any>(null);
     const [lastRange, setLastRange] = useState<any>(null);
 
@@ -126,8 +147,10 @@ const Overview = () => {
         if (activeSubCategory) {
             fetchPageData(activeSubCategory.id);
             setSelectedBlock(null);
+            setSelectedSaId(null);
         } else {
             setPageData(null);
+            setSelectedSaId(null);
         }
     }, [activeSubCategory]);
 
@@ -318,18 +341,38 @@ const Overview = () => {
         try {
             if (modalType === 'category') {
                 if (editingItem) {
-                    await updateCategory(token, editingItem.id, { name: modalName, description: modalDescription });
+                    const updated = await updateCategory(token, editingItem.id, { name: modalName, description: modalDescription });
+                    if (activeCategory?.id === editingItem.id) {
+                        setActiveCategory(prev => prev ? { ...prev, ...updated } : updated);
+                    }
                 } else {
                     await createCategory(token, { name: modalName, description: modalDescription });
                 }
                 fetchCategories();
             } else if (modalType === 'subcategory') {
                 if (editingItem) {
-                    await updateSubCategory(token, editingItem.id, { category_id: activeCategory!.id, name: modalName, description: modalDescription });
+                    const catId = editingItem.category_id || activeCategory?.id || activeSubCategory?.category_id;
+                    const updated = await updateSubCategory(token, editingItem.id, { 
+                        category_id: catId, 
+                        name: modalName, 
+                        description: modalDescription 
+                    });
+                    if (activeSubCategory?.id === editingItem.id) {
+                        setActiveSubCategory(prev => prev ? { ...prev, ...updated } : updated);
+                        fetchPageData(editingItem.id);
+                    }
+                    if (catId) {
+                        fetchSubCategories(catId);
+                    }
+                    fetchCategories();
                 } else {
-                    await createSubCategory(token, { category_id: activeCategory!.id, name: modalName, description: modalDescription });
+                    const catId = activeCategory?.id || activeSubCategory?.category_id;
+                    if (catId) {
+                        await createSubCategory(token, { category_id: catId, name: modalName, description: modalDescription });
+                        fetchSubCategories(catId);
+                    }
+                    fetchCategories();
                 }
-                fetchSubCategories(activeCategory!.id);
             }
             closeModals();
         } catch (err: any) {
@@ -337,33 +380,57 @@ const Overview = () => {
         }
     };
 
-    const handleDeleteCategory = async (id: number) => {
-        if (!window.confirm('Delete category and all its contents?')) return;
-        try {
-            await deleteCategory(token, id);
-            if (activeCategory?.id === id) {
-                setActiveCategory(null);
-                setActiveSubCategory(null);
-                setActiveTab('categories');
+    const handleDeleteCategory = (id: number) => {
+        const cat = categories.find(c => c.id === id);
+        setConfirmModal({
+            isOpen: true,
+            label: 'Category Management',
+            title: 'Delete Category',
+            message: `Are you sure you want to delete "${cat?.name || 'this category'}" and all of its contents? This action cannot be undone.`,
+            confirmText: 'Delete Category',
+            cancelText: 'Cancel',
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    await deleteCategory(token, id);
+                    if (activeCategory?.id === id) {
+                        setActiveCategory(null);
+                        setActiveSubCategory(null);
+                        setActiveTab('categories');
+                    }
+                    fetchCategories();
+                } catch (err: any) {
+                    setError(err.message);
+                }
             }
-            fetchCategories();
-        } catch (err: any) {
-            setError(err.message);
-        }
+        });
     };
 
-    const handleDeleteSubCategory = async (id: number) => {
-        if (!window.confirm('Delete subcategory and its articles?')) return;
-        try {
-            await deleteSubCategory(token, id);
-            if (activeSubCategory?.id === id) {
-                setActiveSubCategory(null);
-                setActiveTab('subcategories');
+    const handleDeleteSubCategory = (id: number) => {
+        const sub = subcategories.find(s => s.id === id);
+        setConfirmModal({
+            isOpen: true,
+            label: 'Subcategory Management',
+            title: 'Delete Subcategory',
+            message: `Are you sure you want to delete "${sub?.name || 'this subcategory'}" and its articles? This action cannot be undone.`,
+            confirmText: 'Delete Subcategory',
+            cancelText: 'Cancel',
+            danger: true,
+            onConfirm: async () => {
+                try {
+                    await deleteSubCategory(token, id);
+                    if (activeSubCategory?.id === id) {
+                        setActiveSubCategory(null);
+                        setActiveTab('subcategories');
+                    }
+                    if (activeCategory) {
+                        fetchSubCategories(activeCategory.id);
+                    }
+                } catch (err: any) {
+                    setError(err.message);
+                }
             }
-            fetchSubCategories(activeCategory!.id);
-        } catch (err: any) {
-            setError(err.message);
-        }
+        });
     };
 
     // --- Block Layout Editor Handlers ---
@@ -404,45 +471,68 @@ const Overview = () => {
         }
     };
 
-    const handleDeleteArticleFromEditor = async (id: number) => {
-        if (!window.confirm('Delete article and all its subarticles?')) return;
-        setError(null);
-        try {
-            await deleteArticle(token, id);
-            if (selectedBlock?.type === 'article' && selectedBlock.id === id) {
-                setSelectedBlock(null);
+    const handleDeleteArticleFromEditor = (id: number) => {
+        const article = pageData?.articles?.find((art: any) => art.id === id);
+        setConfirmModal({
+            isOpen: true,
+            label: 'Page Layout Editor',
+            title: 'Delete Article Block',
+            message: `Are you sure you want to delete article "${article?.title || 'this article'}" and all of its subarticles? This action cannot be undone.`,
+            confirmText: 'Delete Article',
+            cancelText: 'Cancel',
+            danger: true,
+            onConfirm: async () => {
+                setError(null);
+                try {
+                    await deleteArticle(token, id);
+                    if (selectedBlock?.type === 'article' && selectedBlock.id === id) {
+                        setSelectedBlock(null);
+                    }
+                    if (article && selectedSaId && article.subarticles?.some((sa: any) => sa.id === selectedSaId)) {
+                        setSelectedSaId(null);
+                    }
+                    if (activeSubCategory) {
+                        fetchPageData(activeSubCategory.id);
+                    }
+                } catch (err: any) {
+                    setError(err.message);
+                }
             }
-            // If the active sub-article belonged to the deleted article, reset view to Overview
-            const deletedArt = pageData?.articles?.find((art: any) => art.id === id);
-            if (deletedArt && selectedSaId && deletedArt.subarticles?.some((sa: any) => sa.id === selectedSaId)) {
-                setSelectedSaId(null);
-            }
-            if (activeSubCategory) {
-                fetchPageData(activeSubCategory.id);
-            }
-        } catch (err: any) {
-            setError(err.message);
-        }
+        });
     };
 
-    const handleDeleteSubArticleFromEditor = async (id: number) => {
-        if (!window.confirm('Delete this subarticle?')) return;
-        setError(null);
-        try {
-            await deleteSubArticle(token, id);
-            if (selectedBlock?.type === 'subarticle' && selectedBlock.id === id) {
-                setSelectedBlock(null);
+    const handleDeleteSubArticleFromEditor = (id: number) => {
+        let subTitle = 'this subarticle';
+        pageData?.articles?.forEach((art: any) => {
+            const found = art.subarticles?.find((sa: any) => sa.id === id);
+            if (found) subTitle = found.title;
+        });
+        setConfirmModal({
+            isOpen: true,
+            label: 'Page Layout Editor',
+            title: 'Delete Sub-article',
+            message: `Are you sure you want to delete "${subTitle}"? This action cannot be undone.`,
+            confirmText: 'Delete Sub-article',
+            cancelText: 'Cancel',
+            danger: true,
+            onConfirm: async () => {
+                setError(null);
+                try {
+                    await deleteSubArticle(token, id);
+                    if (selectedBlock?.type === 'subarticle' && selectedBlock.id === id) {
+                        setSelectedBlock(null);
+                    }
+                    if (selectedSaId === id) {
+                        setSelectedSaId(null);
+                    }
+                    if (activeSubCategory) {
+                        fetchPageData(activeSubCategory.id);
+                    }
+                } catch (err: any) {
+                    setError(err.message);
+                }
             }
-            // Reset active selection to Overview if the deleted sub-article was currently active
-            if (selectedSaId === id) {
-                setSelectedSaId(null);
-            }
-            if (activeSubCategory) {
-                fetchPageData(activeSubCategory.id);
-            }
-        } catch (err: any) {
-            setError(err.message);
-        }
+        });
     };
 
     const handleSaveSubCategoryDetails = async (e: React.FormEvent) => {
@@ -456,7 +546,9 @@ const Overview = () => {
                 description: subCatFormDescription
             });
             setActiveSubCategory(updated);
+            fetchPageData(activeSubCategory.id);
             fetchSubCategories(activeCategory.id);
+            fetchCategories();
             alert("Subcategory page settings updated!");
         } catch (err: any) {
             setError(err.message);
@@ -481,37 +573,6 @@ const Overview = () => {
     if (!token) {
         return (
             <div className="wp-login-wrapper">
-                <style>{`
-                    .wp-login-wrapper {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 100vh;
-                        background-color: #f1f1f1;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    }
-                    .wp-login-container {
-                        width: 340px;
-                        padding: 2rem 1.5rem;
-                        background: #fff;
-                        border-radius: 4px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.13);
-                        border: 1px solid #ccd0d4;
-                    }
-                    .wp-login-logo {
-                        text-align: center;
-                        margin-bottom: 1.5rem;
-                    }
-                    .wp-login-logo img {
-                        height: 64px;
-                        width: auto;
-                    }
-                    .wp-login-logo h4 {
-                        margin-top: 0.5rem;
-                        font-weight: 700;
-                        color: #1d2327;
-                    }
-                `}</style>
                 <div className="wp-login-container">
                     <div className="wp-login-logo">
                         <img src="/assets/img/logo.png" alt="logo" />
@@ -550,501 +611,6 @@ const Overview = () => {
 
     return (
         <div className="wp-admin-wrapper">
-            <style>{`
-                /* WordPress Admin Core Styling */
-                .wp-admin-wrapper {
-                    display: flex;
-                    min-height: 100vh;
-                    background-color: #f0f2f5;
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-                }
-
-                .wp-sidebar {
-                    width: 260px;
-                    background: #ffffff;
-                    color: #1e293b;
-                    display: flex;
-                    flex-direction: column;
-                    flex-shrink: 0;
-                    position: sticky;
-                    top: 0;
-                    height: 100vh;
-                    z-index: 100;
-                    border-right: 1px solid #e2e8f0;
-                }
-
-                .wp-sidebar-menu {
-                    list-style: none;
-                    padding: 0;
-                    margin: 1.5rem 0;
-                    flex-grow: 1;
-                }
-
-                .wp-sidebar-menu-item {
-                    margin-bottom: 0.25rem;
-                }
-
-                .wp-sidebar-menu-link {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    padding: 0.75rem 1.5rem;
-                    color: #475569;
-                    text-decoration: none;
-                    font-weight: 500;
-                    transition: all 0.2s ease;
-                    cursor: pointer;
-                    border-left: 4px solid transparent;
-                    background: transparent;
-                    width: 100%;
-                    text-align: left;
-                    border: none;
-                    border-radius: 0;
-                }
-
-                .wp-sidebar-menu-link:hover {
-                    background: #f1f5f9;
-                    color: #2271b1;
-                }
-
-                .wp-sidebar-menu-link.active {
-                    background: #e2e8f0;
-                    color: #2271b1;
-                    border-left-color: #2271b1;
-                }
-
-                .wp-sidebar-menu-link.disabled {
-                    color: #cbd5e1;
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                    pointer-events: none;
-                }
-
-                .wp-sidebar-footer {
-                    padding: 1rem 1.5rem;
-                    border-top: 1px solid #e2e8f0;
-                    background: #f8fafc;
-                }
-
-                .wp-sidebar-user {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    font-size: 0.85rem;
-                    margin-bottom: 0.75rem;
-                    color: #475569;
-                }
-
-                .wp-logout-btn {
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                    font-size: 0.85rem;
-                    padding: 0.5rem;
-                    background: #d63638;
-                    border: none;
-                    border-radius: 4px;
-                    color: #fff;
-                    font-weight: bold;
-                }
-
-                .wp-logout-btn:hover {
-                    background: #b32d2e;
-                }
-
-                .wp-main-content {
-                    flex-grow: 1;
-                    padding: 2rem;
-                    overflow-y: auto;
-                    height: 100vh;
-                }
-
-                /* Breadcrumb Styling */
-                .wp-breadcrumbs-container {
-                    background: #fff;
-                    padding: 0.85rem 1.25rem;
-                    border-radius: 8px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-                    margin-bottom: 1.5rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    font-size: 0.85rem;
-                    color: #64748b;
-                }
-
-                .wp-breadcrumb-item {
-                    cursor: pointer;
-                    color: #2271b1;
-                    font-weight: 500;
-                    text-decoration: none;
-                }
-
-                .wp-breadcrumb-item:hover {
-                    text-decoration: underline;
-                }
-
-                .wp-breadcrumb-separator {
-                    color: #94a3b8;
-                }
-
-                .wp-breadcrumb-current {
-                    color: #1e293b;
-                    font-weight: 600;
-                }
-
-                /* Dashboard Grid & Cards */
-                .wp-card-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                    gap: 1.5rem;
-                }
-
-                .wp-dashboard-card {
-                    background: #fff;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-                    border: 1px solid #e2e8f0;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    transition: transform 0.2s, box-shadow 0.2s;
-                }
-
-                .wp-dashboard-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
-                }
-
-                .wp-card-header {
-                    padding: 1.25rem;
-                    border-bottom: 1px solid #f1f5f9;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: 0.75rem;
-                }
-
-                .wp-card-title {
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    color: #1e293b;
-                    margin: 0;
-                }
-
-                .wp-card-badge {
-                    background: #e0f2fe;
-                    color: #0369a1;
-                    padding: 0.2rem 0.5rem;
-                    border-radius: 9999px;
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    white-space: nowrap;
-                }
-
-                .wp-card-body {
-                    padding: 1.25rem;
-                    color: #64748b;
-                    font-size: 0.85rem;
-                    line-height: 1.5;
-                    flex-grow: 1;
-                }
-
-                .wp-card-actions {
-                    padding: 0.85rem 1.25rem;
-                    background: #f8fafc;
-                    border-top: 1px solid #f1f5f9;
-                    display: flex;
-                    gap: 0.5rem;
-                }
-
-                /* Layout Editor Canvas & Sidebar */
-                .wp-editor-workspace {
-                    display: flex;
-                    gap: 1.5rem;
-                    align-items: flex-start;
-                }
-
-                .wp-editor-canvas {
-                    flex-grow: 1;
-                    background: #fff;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-                    overflow: hidden;
-                    min-height: calc(100vh - 180px);
-                }
-
-                .wp-editor-header {
-                    background: #fff;
-                    border-bottom: 1px solid #e2e8f0;
-                    padding: 1rem 1.5rem;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .wp-editor-title {
-                    font-size: 1.2rem;
-                    font-weight: 700;
-                    margin: 0;
-                    color: #1e293b;
-                }
-
-                .wp-editor-body {
-                    padding: 1.5rem;
-                }
-
-                /* Block outline / Gutenberg visual layout editor */
-                .wp-block-wrapper {
-                    position: relative;
-                    border: 2px dashed #cbd5e1;
-                    border-radius: 8px;
-                    padding: 1.5rem;
-                    margin-bottom: 2rem;
-                    transition: all 0.2s ease;
-                    background: #fff;
-                }
-
-                .wp-block-wrapper:hover {
-                    border-color: #2271b1;
-                    box-shadow: 0 4px 15px rgba(34, 113, 177, 0.06);
-                }
-
-                .wp-block-wrapper.is-active {
-                    border-color: #2271b1;
-                    border-style: solid;
-                    box-shadow: 0 0 0 1px #2271b1, 0 4px 20px rgba(34, 113, 177, 0.1);
-                }
-
-                .wp-block-subarticle-wrapper {
-                    position: relative;
-                    border: 2px dashed #cbd5e1;
-                    border-radius: 6px;
-                    padding: 1rem;
-                    margin-top: 1rem;
-                    transition: all 0.2s ease;
-                    background: #f8fafc;
-                }
-
-                .wp-block-subarticle-wrapper:hover {
-                    border-color: #46b450;
-                    box-shadow: 0 4px 10px rgba(70, 180, 80, 0.05);
-                }
-
-                .wp-block-subarticle-wrapper.is-active {
-                    border-color: #46b450;
-                    border-style: solid;
-                    box-shadow: 0 0 0 1px #46b450, 0 4px 15px rgba(70, 180, 80, 0.08);
-                }
-
-                .wp-block-toolbar {
-                    position: absolute;
-                    top: -14px;
-                    left: 12px;
-                    background: #2271b1;
-                    color: #fff;
-                    padding: 0.15rem 0.5rem;
-                    border-radius: 4px;
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    display: none;
-                    align-items: center;
-                    gap: 0.4rem;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    z-index: 10;
-                }
-
-                .wp-block-subarticle-wrapper .wp-block-toolbar {
-                    background: #46b450;
-                }
-
-                .wp-block-wrapper:hover > .wp-block-toolbar,
-                .wp-block-wrapper.is-active > .wp-block-toolbar,
-                .wp-block-subarticle-wrapper:hover > .wp-block-toolbar,
-                .wp-block-subarticle-wrapper.is-active > .wp-block-toolbar {
-                    display: flex;
-                }
-
-                .wp-toolbar-btn {
-                    background: transparent;
-                    border: none;
-                    color: #fff;
-                    padding: 0.1rem 0.3rem;
-                    cursor: pointer;
-                    font-size: 0.75rem;
-                    display: flex;
-                    align-items: center;
-                    transition: opacity 0.2s;
-                    border-radius: 2px;
-                }
-
-                .wp-toolbar-btn:hover {
-                    background: rgba(255,255,255,0.25);
-                }
-
-                /* Inspector Sidebar */
-                .wp-inspector {
-                    width: 380px;
-                    background: #fff;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-                    position: sticky;
-                    top: 2rem;
-                    flex-shrink: 0;
-                    max-height: calc(100vh - 4rem);
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                }
-
-                .wp-inspector-header {
-                    padding: 1rem 1.25rem;
-                    border-bottom: 1px solid #e2e8f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: #f8fafc;
-                }
-
-                .wp-inspector-title {
-                    font-size: 0.95rem;
-                    font-weight: 700;
-                    margin: 0;
-                    color: #1e293b;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
-
-                .wp-inspector-body {
-                    padding: 1.25rem;
-                    overflow-y: auto;
-                    flex-grow: 1;
-                }
-
-                .wp-inspector-footer {
-                    padding: 0.85rem 1.25rem;
-                    border-top: 1px solid #e2e8f0;
-                    background: #f8fafc;
-                    display: flex;
-                    gap: 0.5rem;
-                }
-
-                /* Block Inspector form fields */
-                .wp-form-group {
-                    margin-bottom: 1.25rem;
-                }
-
-                .wp-form-label {
-                    display: block;
-                    font-size: 0.8rem;
-                    font-weight: 600;
-                    color: #475569;
-                    margin-bottom: 0.4rem;
-                }
-
-                .wp-form-input {
-                    font-size: 0.85rem;
-                    padding: 0.5rem 0.75rem;
-                    border: 1px solid #cbd5e1;
-                    border-radius: 6px;
-                    width: 100%;
-                    font-family: inherit;
-                }
-
-                .wp-form-input:focus {
-                    border-color: #2271b1;
-                    outline: none;
-                    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.12);
-                }
-
-                .wp-image-preview-box {
-                    border: 1px dashed #cbd5e1;
-                    border-radius: 6px;
-                    padding: 0.75rem;
-                    text-align: center;
-                    background: #f8fafc;
-                    position: relative;
-                }
-
-                .wp-image-preview-thumbnail {
-                    max-width: 100%;
-                    max-height: 140px;
-                    object-fit: cover;
-                    border-radius: 4px;
-                }
-
-                /* Custom Premium Buttons */
-                .wp-btn-primary {
-                    background: #2271b1;
-                    color: #fff;
-                    font-weight: 600;
-                    border-radius: 6px;
-                    padding: 0.5rem 1.25rem;
-                    font-size: 0.85rem;
-                    border: 1px solid #2271b1;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                }
-
-                .wp-btn-primary:hover {
-                    background: #135e96;
-                    border-color: #135e96;
-                }
-
-                .wp-btn-secondary {
-                    background: #fff;
-                    border: 1px solid #cbd5e1;
-                    color: #475569;
-                    font-weight: 600;
-                    border-radius: 6px;
-                    padding: 0.5rem 1.25rem;
-                    font-size: 0.85rem;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .wp-btn-secondary:hover {
-                    background: #f8fafc;
-                    color: #1e293b;
-                    border-color: #94a3b8;
-                }
-
-                .wp-btn-danger {
-                    background: #d63638;
-                    color: #fff;
-                    font-weight: 600;
-                    border-radius: 6px;
-                    padding: 0.5rem 1rem;
-                    font-size: 0.85rem;
-                    border: 1px solid #d63638;
-                    cursor: pointer;
-                }
-
-                .wp-btn-danger:hover {
-                    background: #b32d2e;
-                    border-color: #b32d2e;
-                }
-
-                .cursor-pointer {
-                    cursor: pointer;
-                }
-
-                .hover-underline:hover {
-                    text-decoration: underline !important;
-                }
-
-                /* Quill toolbar styling override */
-                .ql-editor {
-                    min-height: 200px;
-                    max-height: 350px;
-                    font-size: 0.9rem;
-                }
-            `}</style>
 
             {/* left sidebar dashboard nav */}
             <div className="wp-sidebar">
@@ -1076,7 +642,11 @@ const Overview = () => {
                         <button 
                             className={`wp-sidebar-menu-link ${activeTab === 'editor' ? 'active' : ''} ${!activeSubCategory ? 'disabled' : ''}`}
                             onClick={() => {
-                                if (activeSubCategory) setActiveTab('editor');
+                                if (activeSubCategory) {
+                                    setActiveTab('editor');
+                                    setSelectedSaId(null);
+                                    setSelectedBlock(null);
+                                }
                             }}
                             disabled={!activeSubCategory}
                         >
@@ -1224,6 +794,8 @@ const Overview = () => {
                                             onClick={() => {
                                                 setActiveSubCategory(sc);
                                                 setActiveTab('editor');
+                                                setSelectedSaId(null);
+                                                setSelectedBlock(null);
                                             }}
                                         >
                                             <i className="bi bi-layout-text-sidebar-reverse me-1"></i> Page Layout
@@ -1346,24 +918,12 @@ const Overview = () => {
                                                         <div 
                                                             key={article.id} 
                                                             className={`article wp-block-wrapper ${isArticleActive ? 'is-active' : ''}`}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedBlock({
-                                                                    type: 'article',
-                                                                    id: article.id,
-                                                                    data: {
-                                                                        title: article.title,
-                                                                        content: article.content
-                                                                    }
-                                                                });
-                                                            }}
                                                             style={{
                                                                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                                                                 borderRadius: '8px',
                                                                 backgroundColor: '#fff',
                                                                 padding: '2rem',
                                                                 border: isArticleActive ? '2px solid #1977cc' : '2px solid transparent',
-                                                                cursor: 'pointer',
                                                                 position: 'relative'
                                                             }}
                                                         >
@@ -1759,23 +1319,68 @@ const Overview = () => {
                                                             Overview
                                                         </span>
                                                     </li>
-                                                    {pageData?.articles?.flatMap((art: any) => art.subarticles || []).map((sa: any) => (
-                                                        <li key={sa.id} style={{ marginBottom: '0.75rem' }}>
-                                                            <span 
-                                                                onClick={() => {
-                                                                    setSelectedSaId(sa.id);
-                                                                    setSelectedBlock(null);
-                                                                }}
-                                                                style={{ 
-                                                                    cursor: 'pointer', 
-                                                                    color: selectedSaId === sa.id ? '#1977cc' : '#2c4964',
-                                                                    fontWeight: selectedSaId === sa.id ? 'bold' : 'normal',
-                                                                    display: 'block'
-                                                                }}
-                                                            >
-                                                                <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem' }}></i>
-                                                                {sa.title}
-                                                            </span>
+                                                    {pageData?.articles?.flatMap((art: any) => 
+                                                        (art.subarticles || []).map((sa: any) => ({ ...sa, article_id: sa.article_id || art.id }))
+                                                    ).map((sa: any) => (
+                                                        <li key={sa.id} className="sidebar-subarticle-item" style={{ marginBottom: '0.75rem', position: 'relative' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                                                <span 
+                                                                    onClick={() => {
+                                                                        setSelectedSaId(sa.id);
+                                                                        setSelectedBlock(null);
+                                                                    }}
+                                                                    style={{ 
+                                                                        cursor: 'pointer', 
+                                                                        color: selectedSaId === sa.id ? '#1977cc' : '#2c4964',
+                                                                        fontWeight: selectedSaId === sa.id ? 'bold' : 'normal',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        flexGrow: 1,
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap'
+                                                                    }}
+                                                                    title={sa.title}
+                                                                >
+                                                                    <i className="bi bi-chevron-right" style={{ fontSize: '0.8rem', marginRight: '0.5rem', flexShrink: 0 }}></i>
+                                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sa.title}</span>
+                                                                </span>
+                                                                <div className="sidebar-subarticle-actions" style={{ display: 'none', gap: '0.25rem', flexShrink: 0 }}>
+                                                                    <button 
+                                                                        type="button"
+                                                                        className="btn btn-sm btn-outline-primary"
+                                                                        title="Edit Subarticle"
+                                                                        style={{ padding: '0.1rem 0.35rem', fontSize: '0.75rem', lineHeight: '1.2' }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedSaId(sa.id);
+                                                                            setSelectedBlock({
+                                                                                type: 'subarticle',
+                                                                                id: sa.id,
+                                                                                parentId: sa.article_id,
+                                                                                data: {
+                                                                                    title: sa.title,
+                                                                                    content: sa.content
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                    >
+                                                                        <i className="bi bi-pencil-fill"></i>
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        className="btn btn-sm btn-outline-danger"
+                                                                        title="Delete Subarticle"
+                                                                        style={{ padding: '0.1rem 0.35rem', fontSize: '0.75rem', lineHeight: '1.2' }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDeleteSubArticleFromEditor(sa.id);
+                                                                        }}
+                                                                    >
+                                                                        <i className="bi bi-trash-fill"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -1826,6 +1431,57 @@ const Overview = () => {
                                 <button type="submit" className="wp-btn-primary">Save Changes</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* --- IBM CARBON DESIGN SYSTEM CONFIRMATION MODAL --- */}
+            {confirmModal.isOpen && (
+                <div className="carbon-modal-backdrop">
+                    <div className={`carbon-modal-container ${confirmModal.danger ? 'danger' : 'primary'}`}>
+                        <div className="carbon-modal-header">
+                            <div>
+                                <div className="carbon-modal-label">
+                                    {confirmModal.label || 'Confirmation'}
+                                </div>
+                                <h4 className="carbon-modal-title">
+                                    {confirmModal.title}
+                                </h4>
+                            </div>
+                            <button 
+                                type="button" 
+                                className="carbon-modal-close-btn"
+                                onClick={closeConfirmModal}
+                                aria-label="Close modal"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <div className="carbon-modal-body">
+                            {confirmModal.message}
+                        </div>
+
+                        <div className="carbon-modal-footer">
+                            <button 
+                                type="button" 
+                                className="carbon-btn-secondary"
+                                onClick={closeConfirmModal}
+                            >
+                                <span>{confirmModal.cancelText || 'Cancel'}</span>
+                            </button>
+                            <button 
+                                type="button" 
+                                className={confirmModal.danger ? 'carbon-btn-danger' : 'carbon-btn-primary'}
+                                onClick={() => {
+                                    const action = confirmModal.onConfirm;
+                                    closeConfirmModal();
+                                    action();
+                                }}
+                            >
+                                <span>{confirmModal.confirmText || 'Confirm'}</span>
+                                <i className={`bi ${confirmModal.danger ? 'bi-trash3-fill' : 'bi-check-lg'}`}></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
