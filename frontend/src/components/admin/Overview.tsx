@@ -575,7 +575,7 @@ const Overview = () => {
             <div className="wp-login-wrapper">
                 <div className="wp-login-container">
                     <div className="wp-login-logo">
-                        <img src="/assets/img/logo.png" alt="logo" />
+                        <img src={`${import.meta.env.BASE_URL}assets/img/logo.png`} alt="logo" />
                         <h4>Health promotion portal</h4>
                     </div>
                     {error && <div className="alert alert-danger p-2 small">{error}</div>}

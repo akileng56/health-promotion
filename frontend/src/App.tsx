@@ -10,7 +10,7 @@ import Details from "./components/Details";
 const App = () => {
     return (
         <>
-            <Router>
+            <Router basename={import.meta.env.BASE_URL}>
                 <HeaderComponent/>
                 <main className="main">
                     <Routes>
