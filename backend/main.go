@@ -51,8 +51,6 @@ type Article struct {
 	SubCategoryID int          `json:"subcategory_id"`
 	Title         string       `json:"title"`
 	Content       string       `json:"content"`
-	ImageURL      string       `json:"image_url"`
-	VideoURL      string       `json:"video_url"`
 	SubArticles   []SubArticle `json:"subarticles,omitempty"`
 	CreatedAt     time.Time    `json:"created_at"`
 	UpdatedAt     time.Time    `json:"updated_at"`
@@ -63,8 +61,6 @@ type SubArticle struct {
 	ArticleID int       `json:"article_id"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
-	ImageURL  string    `json:"image_url"`
-	VideoURL  string    `json:"video_url"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -84,16 +80,12 @@ type ArticleRequest struct {
 	SubCategoryID int    `json:"subcategory_id"`
 	Title         string `json:"title"`
 	Content       string `json:"content"`
-	ImageURL      string `json:"image_url"`
-	VideoURL      string `json:"video_url"`
 }
 
 type SubArticleRequest struct {
 	ArticleID int    `json:"article_id"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
-	ImageURL  string `json:"image_url"`
-	VideoURL  string `json:"video_url"`
 }
 
 var db *sql.DB
@@ -281,8 +273,6 @@ func createTables() {
 		subcategory_id INTEGER REFERENCES disease_subcategories(id) ON DELETE CASCADE,
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
-		image_url TEXT,
-		video_url TEXT,
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 		updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 	);
@@ -292,8 +282,6 @@ func createTables() {
 		article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
-		image_url TEXT,
-		video_url TEXT,
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 		updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 	);
@@ -335,6 +323,17 @@ func seedDiseases() {
 	}
 
 	log.Println("Database seeded successfully with default categories, subcategories, and articles!")
+
+	// Update sequences so primary keys don't conflict with seeded IDs
+	_, err = db.Exec(`
+		SELECT setval('disease_categories_id_seq', COALESCE((SELECT MAX(id)+1 FROM disease_categories), 1), false);
+		SELECT setval('disease_subcategories_id_seq', COALESCE((SELECT MAX(id)+1 FROM disease_subcategories), 1), false);
+		SELECT setval('articles_id_seq', COALESCE((SELECT MAX(id)+1 FROM articles), 1), false);
+		SELECT setval('sub_articles_id_seq', COALESCE((SELECT MAX(id)+1 FROM sub_articles), 1), false);
+	`)
+	if err != nil {
+		log.Println("Error resetting database sequences after seeding:", err)
+	}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -571,15 +570,15 @@ func getSubCategories(w http.ResponseWriter, r *http.Request) {
 
 		// Fetch Articles for each subcategory
 		artRows, err := db.Query(`
-			SELECT id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
+			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
 			WHERE subcategory_id = $1
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`, sc.ID)
 		if err == nil {
 			for artRows.Next() {
 				var a Article
-				if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt); err == nil {
+				if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt); err == nil {
 					sc.Articles = append(sc.Articles, a)
 				}
 			}
@@ -613,27 +612,27 @@ func getSubCategory(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch Articles (Hierarchical)
 	artRows, err := db.Query(`
-		SELECT id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
+		SELECT id, subcategory_id, title, content, created_at, updated_at
 		FROM articles
 		WHERE subcategory_id = $1
-		ORDER BY created_at DESC
+		ORDER BY id ASC
 	`, id)
 	if err == nil {
 		defer artRows.Close()
 		for artRows.Next() {
 			var a Article
-			if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt); err == nil {
+			if err := artRows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt); err == nil {
 				// Fetch SubArticles for each article
 				subArtRows, err := db.Query(`
-					SELECT id, article_id, title, content, image_url, video_url, created_at, updated_at
+					SELECT id, article_id, title, content, created_at, updated_at
 					FROM sub_articles
 					WHERE article_id = $1
-					ORDER BY created_at ASC
+					ORDER BY id ASC
 				`, a.ID)
 				if err == nil {
 					for subArtRows.Next() {
 						var sa SubArticle
-						if err := subArtRows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt); err == nil {
+						if err := subArtRows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt); err == nil {
 							a.SubArticles = append(a.SubArticles, sa)
 						}
 					}
@@ -733,16 +732,16 @@ func getArticles(w http.ResponseWriter, r *http.Request) {
 
 	if subCategoryID != "" {
 		rows, err = db.Query(`
-			SELECT id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
+			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
 			WHERE subcategory_id = $1
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`, subCategoryID)
 	} else {
 		rows, err = db.Query(`
-			SELECT id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
+			SELECT id, subcategory_id, title, content, created_at, updated_at
 			FROM articles
-			ORDER BY created_at DESC
+			ORDER BY id ASC
 		`)
 	}
 
@@ -755,7 +754,7 @@ func getArticles(w http.ResponseWriter, r *http.Request) {
 	articles := []Article{}
 	for rows.Next() {
 		var a Article
-		err := rows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt)
+		err := rows.Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to scan article")
 			return
@@ -771,10 +770,10 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 
 	var a Article
 	err := db.QueryRow(`
-		SELECT id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
+		SELECT id, subcategory_id, title, content, created_at, updated_at
 		FROM articles
 		WHERE id = $1
-	`, id).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt)
+	`, id).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		writeError(w, http.StatusNotFound, "article not found")
@@ -787,16 +786,16 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch SubArticles (Hierarchical)
 	subArtRows, err := db.Query(`
-		SELECT id, article_id, title, content, image_url, video_url, created_at, updated_at
+		SELECT id, article_id, title, content, created_at, updated_at
 		FROM sub_articles
 		WHERE article_id = $1
-		ORDER BY created_at ASC
+		ORDER BY id ASC
 	`, id)
 	if err == nil {
 		defer subArtRows.Close()
 		for subArtRows.Next() {
 			var sa SubArticle
-			if err := subArtRows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt); err == nil {
+			if err := subArtRows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt); err == nil {
 				a.SubArticles = append(a.SubArticles, sa)
 			}
 		}
@@ -817,14 +816,23 @@ func createArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure that a subcategory has only one Article
+	var count int
+	dbErr := db.QueryRow("SELECT COUNT(*) FROM articles WHERE subcategory_id = $1", req.SubCategoryID).Scan(&count)
+	if dbErr == nil && count > 0 {
+		writeError(w, http.StatusBadRequest, "This subcategory already has an article layout. Only one article layout is permitted per subcategory.")
+		return
+	}
+
 	var a Article
 	err := db.QueryRow(`
-		INSERT INTO articles(subcategory_id, title, content, image_url, video_url)
-		VALUES($1, $2, $3, $4, $5)
-		RETURNING id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
-	`, req.SubCategoryID, req.Title, req.Content, req.ImageURL, req.VideoURL).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt)
+		INSERT INTO articles(subcategory_id, title, content)
+		VALUES($1, $2, $3)
+		RETURNING id, subcategory_id, title, content, created_at, updated_at
+	`, req.SubCategoryID, req.Title, req.Content).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt)
 
 	if err != nil {
+		log.Printf("[createArticle] Database error: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to create article")
 		return
 	}
@@ -848,10 +856,10 @@ func updateArticle(w http.ResponseWriter, r *http.Request) {
 	var a Article
 	err := db.QueryRow(`
 		UPDATE articles
-		SET subcategory_id = $1, title = $2, content = $3, image_url = $4, video_url = $5, updated_at = NOW()
-		WHERE id = $6
-		RETURNING id, subcategory_id, title, content, image_url, video_url, created_at, updated_at
-	`, req.SubCategoryID, req.Title, req.Content, req.ImageURL, req.VideoURL, id).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.ImageURL, &a.VideoURL, &a.CreatedAt, &a.UpdatedAt)
+		SET subcategory_id = $1, title = $2, content = $3, updated_at = NOW()
+		WHERE id = $4
+		RETURNING id, subcategory_id, title, content, created_at, updated_at
+	`, req.SubCategoryID, req.Title, req.Content, id).Scan(&a.ID, &a.SubCategoryID, &a.Title, &a.Content, &a.CreatedAt, &a.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		writeError(w, http.StatusNotFound, "article not found")
@@ -891,16 +899,16 @@ func getSubArticles(w http.ResponseWriter, r *http.Request) {
 
 	if articleID != "" {
 		rows, err = db.Query(`
-			SELECT id, article_id, title, content, image_url, video_url, created_at, updated_at
+			SELECT id, article_id, title, content, created_at, updated_at
 			FROM sub_articles
 			WHERE article_id = $1
-			ORDER BY created_at ASC
+			ORDER BY id ASC
 		`, articleID)
 	} else {
 		rows, err = db.Query(`
-			SELECT id, article_id, title, content, image_url, video_url, created_at, updated_at
+			SELECT id, article_id, title, content, created_at, updated_at
 			FROM sub_articles
-			ORDER BY created_at ASC
+			ORDER BY id ASC
 		`)
 	}
 
@@ -913,7 +921,7 @@ func getSubArticles(w http.ResponseWriter, r *http.Request) {
 	subarticles := []SubArticle{}
 	for rows.Next() {
 		var sa SubArticle
-		err := rows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt)
+		err := rows.Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to scan subarticle")
 			return
@@ -929,10 +937,10 @@ func getSubArticle(w http.ResponseWriter, r *http.Request) {
 
 	var sa SubArticle
 	err := db.QueryRow(`
-		SELECT id, article_id, title, content, image_url, video_url, created_at, updated_at
+		SELECT id, article_id, title, content, created_at, updated_at
 		FROM sub_articles
 		WHERE id = $1
-	`, id).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt)
+	`, id).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		writeError(w, http.StatusNotFound, "subarticle not found")
@@ -960,10 +968,10 @@ func createSubArticle(w http.ResponseWriter, r *http.Request) {
 
 	var sa SubArticle
 	err := db.QueryRow(`
-		INSERT INTO sub_articles(article_id, title, content, image_url, video_url)
-		VALUES($1, $2, $3, $4, $5)
-		RETURNING id, article_id, title, content, image_url, video_url, created_at, updated_at
-	`, req.ArticleID, req.Title, req.Content, req.ImageURL, req.VideoURL).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt)
+		INSERT INTO sub_articles(article_id, title, content)
+		VALUES($1, $2, $3)
+		RETURNING id, article_id, title, content, created_at, updated_at
+	`, req.ArticleID, req.Title, req.Content).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt)
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to create subarticle")
@@ -989,10 +997,10 @@ func updateSubArticle(w http.ResponseWriter, r *http.Request) {
 	var sa SubArticle
 	err := db.QueryRow(`
 		UPDATE sub_articles
-		SET article_id = $1, title = $2, content = $3, image_url = $4, video_url = $5, updated_at = NOW()
-		WHERE id = $6
-		RETURNING id, article_id, title, content, image_url, video_url, created_at, updated_at
-	`, req.ArticleID, req.Title, req.Content, req.ImageURL, req.VideoURL, id).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.ImageURL, &sa.VideoURL, &sa.CreatedAt, &sa.UpdatedAt)
+		SET article_id = $1, title = $2, content = $3, updated_at = NOW()
+		WHERE id = $4
+		RETURNING id, article_id, title, content, created_at, updated_at
+	`, req.ArticleID, req.Title, req.Content, id).Scan(&sa.ID, &sa.ArticleID, &sa.Title, &sa.Content, &sa.CreatedAt, &sa.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		writeError(w, http.StatusNotFound, "subarticle not found")

@@ -42,7 +42,7 @@ const Home = () => {
                      data-bs-interval="5000">
 
                     <div className="carousel-item active">
-                        <img src="/assets/img/hero-carousel/home-carousel-1.jpg" alt="Health Research Stories 1"/>
+                        <img src={`${import.meta.env.BASE_URL}assets/img/hero-carousel/home-carousel-1.jpg`} alt="Health Research Stories 1"/>
                         <div className="carousel-container">
                             <h2>Health Experience Uganda<br/></h2>
                             <p>Uganda Health Promotions presents analysed collections of interviews from health research
@@ -56,7 +56,7 @@ const Home = () => {
 
 
                     <div className="carousel-item">
-                        <img src="/assets/img/hero-carousel/home-carousel.jpg" alt="Health Research Stories 2"/>
+                        <img src={`${import.meta.env.BASE_URL}assets/img/hero-carousel/home-carousel.jpg`} alt="Health Research Stories 2"/>
                         <div className="carousel-container">
                             <h2>Health Experience Uganda</h2>
                             <p>Uganda Health Promotions presents analysed collections of interviews from health research

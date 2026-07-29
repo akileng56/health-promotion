@@ -30,17 +30,36 @@ export default function Categories() {
             .catch((err: any) => console.error("Error fetching categories:", err));
     }, []);
 
+    // Helper to get bootstrap icon dynamically based on category name
+    const getCategoryIcon = (name: string): string => {
+        const n = name.toLowerCase();
+        if (n.includes('covid') || n.includes('virus') || n.includes('infection')) return 'bi-virus';
+        if (n.includes('cancer') || n.includes('tumor')) return 'bi-ribbon';
+        if (n.includes('women') || n.includes('female')) return 'bi-gender-female';
+        if (n.includes('men') || n.includes('male')) return 'bi-gender-male';
+        if (n.includes('young') || n.includes('children') || n.includes('child') || n.includes('youth')) return 'bi-balloon-heart';
+        if (n.includes('long term') || n.includes('condition') || n.includes('chronic')) return 'bi-heart-pulse-fill';
+        if (n.includes('mental') || n.includes('brain') || n.includes('psycholog')) return 'bi-brain';
+        if (n.includes('bereavement') || n.includes('dying') || n.includes('grief')) return 'bi-flower1';
+        if (n.includes('research') || n.includes('trial') || n.includes('study')) return 'bi-search-heart';
+        if (n.includes('healthcare') || n.includes('health') || n.includes('care') || n.includes('experience')) return 'bi-hospital';
+        return 'bi-journal-medical';
+    };
+
     // Helper to get bootstrap icon dynamically based on the subcategory name
     const getSubCategoryIcon = (name: string): string => {
         const n = name.toLowerCase();
         if (n.includes('covid') || n.includes('virus') || n.includes('infection')) return 'bi-virus';
-        if (n.includes('cancer') || n.includes('tumor') || n.includes('screening')) return 'bi-shield-check';
+        if (n.includes('breast')) return 'bi-heart-fill';
+        if (n.includes('cancer') || n.includes('tumor') || n.includes('screening') || n.includes('carcinoma') || n.includes('leukaemia') || n.includes('lymphoma')) return 'bi-ribbon';
         if (n.includes('heart') || n.includes('cardio') || n.includes('valve') || n.includes('pulse')) return 'bi-heart-pulse-fill';
-        if (n.includes('brain') || n.includes('neurolog') || n.includes('mental')) return 'bi-brain';
-        if (n.includes('pregnan') || n.includes('birth') || n.includes('antenatal') || n.includes('women')) return 'bi-gender-female';
-        if (n.includes('men') || n.includes('penile') || n.includes('prostate')) return 'bi-gender-male';
-        if (n.includes('older') || n.includes('knee') || n.includes('replacement') || n.includes('joint')) return 'bi-person-walking';
-        if (n.includes('weight') || n.includes('diet') || n.includes('lifestyle') || n.includes('change')) return 'bi-activity';
+        if (n.includes('brain') || n.includes('neurolog') || n.includes('mental') || n.includes('dementia') || n.includes('autism')) return 'bi-brain';
+        if (n.includes('pregnan') || n.includes('birth') || n.includes('antenatal') || n.includes('baby') || n.includes('infant')) return 'bi-balloon-heart';
+        if (n.includes('women')) return 'bi-gender-female';
+        if (n.includes('men') || n.includes('penile') || n.includes('prostate') || n.includes('testicular')) return 'bi-gender-male';
+        if (n.includes('knee') || n.includes('replacement') || n.includes('joint') || n.includes('stroke') || n.includes('parkinson')) return 'bi-person-walking';
+        if (n.includes('weight') || n.includes('diet') || n.includes('lifestyle') || n.includes('diabetes') || n.includes('asthma')) return 'bi-activity';
+        if (n.includes('research') || n.includes('biobank') || n.includes('trial')) return 'bi-flask';
         return 'bi-journal-medical';
     };
 
@@ -65,7 +84,7 @@ export default function Categories() {
                                         onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveTabId(category.id); }}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        <i className="bi bi-folder-fill me-2"></i>
+                                        <i className={`bi ${getCategoryIcon(category.name)} me-2`}></i>
                                         {category.name}
                                     </a>
                                 </li>

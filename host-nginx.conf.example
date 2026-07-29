@@ -1,0 +1,29 @@
+# Host Nginx Configuration for dashboards.health.go.ug/health-promotions
+# File location on host server: /etc/nginx/sites-available/dashboards.health.go.ug.conf
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name dashboards.health.go.ug;
+
+    # Maximum upload size for file assets
+    client_max_body_size 50M;
+
+    # Health Promotion Application subpath proxy to Docker Container (port 3218)
+    location /health-promotions/ {
+        proxy_pass http://127.0.0.1:3218/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Redirect /health-promotions to /health-promotions/ with trailing slash
+    location = /health-promotions {
+        return 301 /health-promotions/;
+    }
+}

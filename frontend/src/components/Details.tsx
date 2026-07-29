@@ -6,16 +6,12 @@ interface SubArticle {
     id: number;
     title: string;
     content: string;
-    image_url?: string;
-    video_url?: string;
 }
 
 interface Article {
     id: number;
     title: string;
     content: string;
-    image_url?: string;
-    video_url?: string;
     created_at: string;
     subarticles?: SubArticle[];
 }
@@ -114,24 +110,7 @@ const Details = () => {
                                                 {/* Only show main article content if no specific subarticle is selected */}
                                                 {!selectedSaId && (
                                                     <div className="content">
-                                                        {article.image_url && (
-                                                            <div style={{ marginBottom: '1.5rem', borderRadius: '8px', overflow: 'hidden' }}>
-                                                                <img src={`${SERVER_BASE_URL}${article.image_url}`} alt={article.title} className={`content-image-style`} />
-                                                            </div>
-                                                        )}
                                                         <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                                                        
-                                                        {article.video_url && getYouTubeEmbedUrl(article.video_url) && (
-                                                            <div style={{ marginTop: '1.5rem', borderRadius: '8px', overflow: 'hidden', position: 'relative', paddingTop: '56.25%' }}>
-                                                                <iframe 
-                                                                    src={getYouTubeEmbedUrl(article.video_url)!}
-                                                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                                    allowFullScreen
-                                                                    title="YouTube video player"
-                                                                ></iframe>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 )}
 
@@ -145,25 +124,7 @@ const Details = () => {
                                                             <div key={sa.id} style={{ marginBottom: selectedSaId ? '0' : '2rem' }}>
                                                                 <h4 style={{ fontWeight: 'bold', color: '#1977cc' }}>{sa.title}</h4>
                                                                 
-                                                                {sa.image_url && (
-                                                                    <div style={{ marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden' }}>
-                                                                        <img src={`${SERVER_BASE_URL}${sa.image_url}`} alt={sa.title} className={`content-image-style`} />
-                                                                    </div>
-                                                                )}
-                                                                
                                                                 <div style={{ fontSize: '1rem' }} dangerouslySetInnerHTML={{ __html: sa.content }} />
-                                                                
-                                                                {sa.video_url && getYouTubeEmbedUrl(sa.video_url) && (
-                                                                    <div style={{ marginTop: '1rem', borderRadius: '8px', overflow: 'hidden', position: 'relative', paddingTop: '56.25%' }}>
-                                                                        <iframe 
-                                                                            src={getYouTubeEmbedUrl(sa.video_url)!}
-                                                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                                            allowFullScreen
-                                                                            title="YouTube video player"
-                                                                        ></iframe>
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         ))}
                                                     </div>

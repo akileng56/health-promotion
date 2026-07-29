@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: promotions_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-promotions_db}
+      POSTGRES_USER: ${DB_USER:-postsuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postspassword}
+    ports:
+      - "127.0.0.1:${DB_PORT_HOST:-5478}:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backend/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postsuser} -d $${POSTGRES_DB:-promotions_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/mohuganda/health-promotion-backend:latest
+    container_name: promotions_backend_prod
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postsuser}
+      DB_PASSWORD: ${DB_PASSWORD:-postspassword}
+      DB_NAME: ${DB_NAME:-promotions_db}
+      PORT: 8080
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-secret-key}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT_HOST:-8421}:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/categories || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/mohuganda/health-promotion-frontend:latest
+    container_name: promotions_frontend_prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT_HOST:-3218}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - FRONTEND_PORT_HOST=${FRONTEND_PORT_HOST:-3218}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - BASE_URL=${BASE_URL:-/health-promotion/}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8421/api}
+      - SERVER_URL=${SERVER_URL:-http://localhost:8421}   
+volumes:
+  postgres_prod_data:
+    driver: local
+  backend_uploads:
+    driver: local

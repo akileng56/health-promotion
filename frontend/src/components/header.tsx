@@ -4,10 +4,10 @@ const HeaderComponent = () => {
         <header id="header" className="header d-flex align-items-center sticky-top">
             <div className="container-fluid container-xl position-relative d-flex align-items-center">
 
-                <a href="/" className="logo d-flex align-items-center me-auto">
-                    <img src="/assets/img/logo.png" alt="logo-title"/>
+                <NavLink to="/" className="logo d-flex align-items-center me-auto">
+                    <img src={`${import.meta.env.BASE_URL}assets/img/logo.png`} alt="logo-title"/>
                     <h1 className="sitename">Health Experience Uganda</h1>
-                </a>
+                </NavLink>
 
                 <nav id="navmenu" className="navmenu">
                     <ul>
