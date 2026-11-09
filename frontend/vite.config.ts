@@ -16,6 +16,21 @@ export default defineConfig({
             res.end()
             return
           }
+          if (req.url?.startsWith('/assets/')) {
+            req.url = `/health-promotions${req.url}`
+          } else if (
+            req.url &&
+            req.url !== '/' &&
+            !req.url.startsWith('/health-promotions/') &&
+            !req.url.startsWith('/@') &&
+            !req.url.startsWith('/__vite') &&
+            !req.url.startsWith('/node_modules/') &&
+            !req.url.startsWith('/src/')
+          ) {
+            res.writeHead(302, { Location: `/health-promotions${req.url}` })
+            res.end()
+            return
+          }
           next()
         })
       },
