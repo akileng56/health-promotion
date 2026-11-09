@@ -2,9 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  base: process.env.VITE_BASE_URL || '/',
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    {
+      name: 'relative-asset-urls',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        return html.replace(/(href|src)="\.?\/(assets\/[^"]+)"/g, '$1="$2"')
+      },
+    },
+  ],
+  base: command === 'build' ? './' : (process.env.VITE_BASE_URL || '/'),
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -13,4 +22,4 @@ export default defineConfig({
       usePolling: true,
     },
   },
-})
+}))

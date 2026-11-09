@@ -15,7 +15,7 @@ services:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./backend/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postsuser} -d $${POSTGRES_DB:-promotions_db}"]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postsuser} -d $${POSTGRES_DB:-promotions_db}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +41,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/categories || exit 1"]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/categories || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -58,9 +58,9 @@ services:
     environment:
       - FRONTEND_PORT_HOST=${FRONTEND_PORT_HOST:-3218}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - BASE_URL=${BASE_URL:-/health-promotion/}
-      - API_BASE_URL=https://health.go.ug
-      - SERVER_URL=https://health.go.ug   
+      - BASE_URL=${BASE_URL:-/health-promotions/}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8421/api}
+      - SERVER_URL= ${SERVER_URL:-http://localhost:8421}
 volumes:
   postgres_prod_data:
     driver: local
