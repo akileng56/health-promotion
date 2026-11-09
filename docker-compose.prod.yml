@@ -59,8 +59,8 @@ services:
       - FRONTEND_PORT_HOST=${FRONTEND_PORT_HOST:-3218}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - BASE_URL=${BASE_URL:-/health-promotion/}
-      - API_BASE_URL=${API_BASE_URL:-http://localhost:8421/api}
-      - SERVER_URL=${SERVER_URL:-http://localhost:8421}   
+      - API_BASE_URL=https://health.go.ug
+      - SERVER_URL=https://health.go.ug   
 volumes:
   postgres_prod_data:
     driver: local
