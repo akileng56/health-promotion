@@ -7,10 +7,19 @@ import A_Z from "./components/A-Z";
 import Overview from "./components/admin/Overview";
 import Details from "./components/Details";
 
+const getBasename = () => {
+    const envBase = import.meta.env.BASE_URL;
+    if (envBase && envBase !== '/' && envBase !== './') {
+        return envBase;
+    }
+    const match = window.location.pathname.match(/^(\/health-promotions?)(?:\/|$)/);
+    return match ? match[1] : '/';
+};
+
 const App = () => {
     return (
         <>
-            <Router basename={import.meta.env.BASE_URL}>
+            <Router basename={getBasename()}>
                 <HeaderComponent/>
                 <main className="main">
                     <Routes>
