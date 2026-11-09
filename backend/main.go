@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -293,6 +294,9 @@ func createTables() {
 	}
 }
 
+//go:embed seed.sql
+var embeddedSeedSQL []byte
+
 func seedDiseases() {
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM disease_categories").Scan(&count)
@@ -307,12 +311,16 @@ func seedDiseases() {
 
 	log.Println("Database is empty. Seeding database with default HEXI categories and subcategories...")
 
-	// Read the seed.sql file
+	// Read the seed.sql file, falling back to embedded seed.sql
 	seedFilePath := "seed.sql"
 	content, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Printf("Error reading seed file %s: %v\n", seedFilePath, err)
-		return
+		if len(embeddedSeedSQL) > 0 {
+			content = embeddedSeedSQL
+		} else {
+			log.Printf("Error reading seed file %s: %v\n", seedFilePath, err)
+			return
+		}
 	}
 
 	// Execute the SQL statements

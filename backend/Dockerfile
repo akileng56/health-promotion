@@ -21,6 +21,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/server .
+COPY --from=builder /app/seed.sql .
 
 EXPOSE 8080
 
