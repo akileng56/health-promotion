@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: promotions_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-promotions_db}
       POSTGRES_USER: ${DB_USER:-postsuser}
@@ -16,6 +17,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     container_name: promotions_backend
+    restart: unless-stopped
     env_file:
       - ./backend/.env
     environment:
@@ -37,6 +39,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: promotions_frontend
+    restart: unless-stopped
     env_file:
       - ./frontend/.env
     ports:
