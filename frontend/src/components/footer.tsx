@@ -1,12 +1,14 @@
+import { Link } from 'react-router-dom';
+
 const FooterComponent = () => {
     return (
         <footer id="footer" className="footer dark-background">
             <div className="container footer-top">
                 <div className="row gy-4">
                     <div className="col-lg-4 col-md-6 footer-about">
-                        <a href="/" className="logo d-flex align-items-center">
+                        <Link to="/" className="logo d-flex align-items-center">
                             <span className="sitename">Health Experience Uganda</span>
-                        </a>
+                        </Link>
                         <div className="footer-contact pt-3">
                             <p>Lourdel Road</p>
                             <p>Kampala, Uganda</p>
@@ -24,20 +26,20 @@ const FooterComponent = () => {
                     <div className="col-lg-2 col-md-3 footer-links">
                         <h4>Useful Links</h4>
                         <ul>
-                            <li><a href="/">Home</a></li>
-                            <li><a href="/categories">Disease Categories</a></li>
-                            <li><a href="/a-z">A-Z Index</a></li>
-                            <li><a href="/admin">Admin Portal</a></li>
+                            <li><Link to="/">Home</Link></li>
+                            <li><Link to="/categories">Disease Categories</Link></li>
+                            <li><Link to="/a-z">A-Z Index</Link></li>
+                            <li><Link to="/admin">Admin Portal</Link></li>
                         </ul>
                     </div>
 
                     <div className="col-lg-2 col-md-3 footer-links">
                         <h4>Health Topics</h4>
                         <ul>
-                            <li><a href="/categories">Infectious Diseases</a></li>
-                            <li><a href="/categories">Prevention</a></li>
-                            <li><a href="/categories">Health Education</a></li>
-                            <li><a href="/categories">Guidelines</a></li>
+                            <li><Link to="/categories">Infectious Diseases</Link></li>
+                            <li><Link to="/categories">Prevention</Link></li>
+                            <li><Link to="/categories">Health Education</Link></li>
+                            <li><Link to="/categories">Guidelines</Link></li>
                         </ul>
                     </div>
 
@@ -45,8 +47,8 @@ const FooterComponent = () => {
                         <h4>Our Newsletter</h4>
                         <p>Subscribe to our newsletter and receive the latest news about our products and services!</p>
                         <form action="forms/newsletter.php" method="post" className="php-email-form">
-                            <div className="newsletter-form"><input type="email" name="email"/><input type="submit"
-                                                                                                      value="Subscribe"/>
+                            <div className="newsletter-form"><input type="email" name="email" /><input type="submit"
+                                value="Subscribe" />
                             </div>
                             <div className="loading">Loading</div>
                             <div className="error-message"></div>

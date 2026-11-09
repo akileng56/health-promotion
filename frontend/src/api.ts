@@ -4,7 +4,7 @@ export const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
 async function handleResponse(response: Response, skipRedirect: boolean = false): Promise<any> {
     if (response.status === 401 && !skipRedirect) {
         localStorage.removeItem('adminToken');
-        window.location.href = '/admin';
+        window.location.href = `${import.meta.env.BASE_URL}admin`;
         throw new Error("Session expired. Please login again.");
     }
     const data = await response.json();

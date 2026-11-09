@@ -5,7 +5,7 @@ const HeaderComponent = () => {
             <div className="container-fluid container-xl position-relative d-flex align-items-center">
 
                 <NavLink to="/" className="logo d-flex align-items-center me-auto">
-                    <img src="assets/img/logo.png" alt="logo-title"/>
+                    <img src="assets/img/logo.png" alt="logo-title" />
                     <h1 className="sitename">Health Experience Uganda</h1>
                 </NavLink>
 
